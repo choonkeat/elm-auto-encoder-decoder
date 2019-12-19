@@ -1,6 +1,6 @@
 # Parser for Elm types
 
-Enough generate automatic encoder and decoder
+Enough to generate automatic encoder and decoder
 
 # Intention
 
