@@ -4,7 +4,7 @@ Enough generate automatic encoder and decoder
 
 # Intention
 
-Given the content of `Foo.Bar` Elm module...
+Given the content of a `Foo.Bar` Elm module
 
 ``` elm
 module Foo.Bar exposing (..)
@@ -15,7 +15,7 @@ type alias Choice =
     Option Bool
 ```
 
-`Elm.Types.AutoEncoder.produceSourceCode` will produce the Elm functions that encode and decode the files in that file.
+`Elm.Types.AutoEncoder.produceSourceCode` will produce the Elm functions that encode and decode the types in that file under the `Auto` submodule
 
 ``` elm
 module Foo.Bar.Auto exposing (..)
@@ -29,8 +29,8 @@ import Json.Encode
 encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
 encodeFooBarOption encodeArga value =
     case value of
-        Foo.Bar.Some a ->
-            Json.Encode.list identity [ encodeString "Foo.Bar.Some", encodeArga a ]
+        Foo.Bar.Some arg0 ->
+            Json.Encode.list identity [ encodeString "Foo.Bar.Some", encodeArga arg0 ]
 
         Foo.Bar.None ->
             Json.Encode.list identity [ encodeString "Foo.Bar.None" ]

@@ -1,8 +1,8 @@
 module Foo.Bar.Auto exposing (..)
 
 -- imports: Set.fromList []
--- importResolver_: Dict.fromList [("Bool","Bool"),("Choice","Foo.Bar.Choice"),("Dict","Dict.Dict"),("Float","Float"),("Good String Float","Foo.Bar.Good String Float"),("Hello","Foo.Bar.Hello"),("Int","Int"),("List","List"),("List.List","List"),("Maybe","Maybe"),("Maybe.Maybe","Maybe"),("None","Foo.Bar.None"),("Option","Foo.Bar.Option"),("Option Bool","Foo.Bar.Option Bool"),("Payload","Foo.Bar.Payload"),("Person","Foo.Bar.Person"),("Set","Set.Set"),("Some a","Foo.Bar.Some a"),("String","String"),("String.String","String")]
--- file.knownTypes: Dict.fromList [("Choice",ElmTypeAlias (AliasCustomType { constructors = [CustomTypeConstructor "Option Bool"], name = TypeName "Choice" [] })),("Hello",ElmCustomType { constructors = [CustomTypeConstructor "Hello",CustomTypeConstructor "Good String Float"], name = TypeName "Hello" [TypeParam "x"] }),("Option",ElmCustomType { constructors = [CustomTypeConstructor "None",CustomTypeConstructor "Some a"], name = TypeName "Option" [TypeParam "a"] }),("Payload",ElmTypeAlias (AliasRecordType (TypeName "Payload" []) [FieldPair (FieldName "title") (TypeName "String" []),FieldPair (FieldName "author") (TypeName "Person" [])])),("Person",ElmTypeAlias (AliasRecordType (TypeName "Person" []) [FieldPair (FieldName "name") (TypeName "String" []),FieldPair (FieldName "age") (TypeName "Int" [])]))]
+-- importResolver_: Dict.fromList [("Bool","Bool"),("Choice","Foo.Bar.Choice"),("Dict","Dict.Dict"),("Float","Float"),("Good String String","Foo.Bar.Good String String"),("Hello","Foo.Bar.Hello"),("Int","Int"),("List","List"),("List.List","List"),("Maybe","Maybe"),("Maybe.Maybe","Maybe"),("None","Foo.Bar.None"),("Option","Foo.Bar.Option"),("Option Bool","Foo.Bar.Option Bool"),("Payload","Foo.Bar.Payload"),("Person","Foo.Bar.Person"),("Set","Set.Set"),("Some a","Foo.Bar.Some a"),("String","String"),("String.String","String")]
+-- file.knownTypes: Dict.fromList [("Choice",ElmTypeAlias (AliasCustomType { constructors = [CustomTypeConstructor "Option Bool"], name = TypeName "Choice" [] })),("Hello",ElmCustomType { constructors = [CustomTypeConstructor "Hello",CustomTypeConstructor "Good String String"], name = TypeName "Hello" [TypeParam "x"] }),("Option",ElmCustomType { constructors = [CustomTypeConstructor "None",CustomTypeConstructor "Some a"], name = TypeName "Option" [TypeParam "a"] }),("Payload",ElmTypeAlias (AliasRecordType (TypeName "Payload" []) [FieldPair (FieldName "title") (TypeName "String" []),FieldPair (FieldName "author") (TypeName "Person" [])])),("Person",ElmTypeAlias (AliasRecordType (TypeName "Person" []) [FieldPair (FieldName "name") (TypeName "String" []),FieldPair (FieldName "age") (TypeName "Int" [])]))]
 
 import Dict
 import Foo.Bar exposing (..)
@@ -115,15 +115,15 @@ encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode
 encodeFooBarOption encodeArga value =
     -- ElmCustomType { constructors = [CustomTypeConstructor "Foo.Bar.None",CustomTypeConstructor "Some a"], name = TypeName "Foo.Bar.Option" [TypeParam "a"] }
     case value of
-        Foo.Bar.Some a -> Json.Encode.list identity [ encodeString "Foo.Bar.Some", encodeArga a]
+        Foo.Bar.Some arg0 -> Json.Encode.list identity [ encodeString "Foo.Bar.Some", encodeArga arg0]
         Foo.Bar.None  -> Json.Encode.list identity [ encodeString "Foo.Bar.None"]
 
 
 encodeFooBarHello : (x -> Json.Encode.Value) -> Foo.Bar.Hello x -> Json.Encode.Value
 encodeFooBarHello encodeArgx value =
-    -- ElmCustomType { constructors = [CustomTypeConstructor "Foo.Bar.Hello",CustomTypeConstructor "Good String Float"], name = TypeName "Foo.Bar.Hello" [TypeParam "x"] }
+    -- ElmCustomType { constructors = [CustomTypeConstructor "Foo.Bar.Hello",CustomTypeConstructor "Good String String"], name = TypeName "Foo.Bar.Hello" [TypeParam "x"] }
     case value of
-        Foo.Bar.Good string float -> Json.Encode.list identity [ encodeString "Foo.Bar.Good", encodeString string, encodeFloat float]
+        Foo.Bar.Good arg0 arg1 -> Json.Encode.list identity [ encodeString "Foo.Bar.Good", encodeString arg0, encodeString arg1]
         Foo.Bar.Hello  -> Json.Encode.list identity [ encodeString "Foo.Bar.Hello"]
 
 
@@ -159,12 +159,12 @@ decodeFooBarOption decodeArga =
 
 decodeFooBarHello : Json.Decode.Decoder (x) -> Json.Decode.Decoder (Foo.Bar.Hello x)
 decodeFooBarHello decodeArgx =
-    -- ElmCustomType { constructors = [CustomTypeConstructor "Foo.Bar.Hello",CustomTypeConstructor "Good String Float"], name = TypeName "Foo.Bar.Hello" [TypeParam "x"] }
+    -- ElmCustomType { constructors = [CustomTypeConstructor "Foo.Bar.Hello",CustomTypeConstructor "Good String String"], name = TypeName "Foo.Bar.Hello" [TypeParam "x"] }
     Json.Decode.index 0 Json.Decode.string
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Foo.Bar.Good" -> Json.Decode.succeed Foo.Bar.Good |> Json.Decode.Pipeline.custom (Json.Decode.index 1 decodeString) |> Json.Decode.Pipeline.custom (Json.Decode.index 2 decodeFloat)
+                    "Foo.Bar.Good" -> Json.Decode.succeed Foo.Bar.Good |> Json.Decode.Pipeline.custom (Json.Decode.index 1 decodeString) |> Json.Decode.Pipeline.custom (Json.Decode.index 2 decodeString)
                     "Foo.Bar.Hello" -> Json.Decode.succeed Foo.Bar.Hello
                     _ ->
                         Json.Decode.fail ("Unexpected Foo.Bar.Hello: " ++ word)

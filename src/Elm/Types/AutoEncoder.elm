@@ -284,13 +284,13 @@ encodeElmType dict elmType =
                                                 List.any isFunction xs
 
                                             matchVars =
-                                                List.map (safeModuleName >> String.toLower) xs
+                                                List.indexedMap (\i word -> String.toLower (safeModuleName ("arg" ++ String.fromInt i))) xs
 
                                             first =
                                                 x ++ " " ++ String.join " " matchVars ++ " -> Json.Encode.list identity [ encodeString " ++ jsonKey x
 
                                             rest =
-                                                List.map (\param -> funcName "encode" param ++ " " ++ String.toLower (safeModuleName param)) xs
+                                                List.indexedMap (\i param -> funcName "encode" param ++ " " ++ String.toLower (safeModuleName ("arg" ++ String.fromInt i))) xs
                                         in
                                         ( hasError || errContainFunc, (String.join ", " (first :: rest) ++ "]") :: acc )
 
@@ -372,9 +372,6 @@ decodeElmType dict elmType =
                                             errContainFunc =
                                                 -- we cannot encode/decode functions
                                                 List.any isFunction xs
-
-                                            matchVars =
-                                                List.map String.toLower xs
 
                                             first =
                                                 jsonKey x ++ " -> Json.Decode.succeed " ++ x

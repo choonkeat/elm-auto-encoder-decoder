@@ -47,7 +47,7 @@ type alias Choice =
 -}
 type Hello x
     = Hello
-    | Good String Float
+    | Good String String
 
 
 {-|
