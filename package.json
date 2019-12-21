@@ -1,0 +1,42 @@
+{
+  "name": "elm-auto-encoder-decoder",
+  "bin": {
+    "elm-auto-encoder-decoder": "./index.js"
+  },
+  "version": "1.0.0",
+  "description": "Watch for file changes and auto generate JSON encoder and decoder for *.elm types",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "elm-test": "^0.19.1-revision2",
+    "xhr2": "^0.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "elm-verify-examples && elm-test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/choonkeat/elm-auto-encoder-decoder.git"
+  },
+  "keywords": [
+    "elm",
+    "auto",
+    "generate",
+    "json",
+    "encoder",
+    "decoder"
+  ],
+  "files": [
+    "index.js",
+    "build/Main.js"
+  ],
+  "author": "Chew Choon Keat",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/choonkeat/elm-auto-encoder-decoder/issues"
+  },
+  "homepage": "https://github.com/choonkeat/elm-auto-encoder-decoder#readme"
+}
