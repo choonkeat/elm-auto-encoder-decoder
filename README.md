@@ -2,6 +2,14 @@
 
 Enough to generate automatic encoder and decoder
 
+# Usage
+
+```
+npx elm-auto-encoder-decoder src/Types.elm
+```
+
+any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
+
 # Intention
 
 Given the content of a `Foo.Bar` Elm module
