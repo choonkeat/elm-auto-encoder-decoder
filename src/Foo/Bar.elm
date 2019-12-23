@@ -18,6 +18,8 @@ module Foo.Bar exposing (..)
 
 -}
 
+import Dict exposing (Dict)
+
 
 type Option a
     = None
@@ -94,3 +96,25 @@ type alias Payload =
     { title : String
     , author : Person
     }
+
+
+{-|
+
+    import Dict
+    import Json.Encode
+    import Json.Decode
+    import Foo.Bar.Auto exposing (..)
+
+    lookupValue : Lookup
+    lookupValue =
+        Dict.fromList [ ("one", 1), ("two", 2) ]
+
+    encodeFooBarLookup lookupValue
+        |> Json.Encode.encode 0
+        |> Debug.log "encoded Lookup"
+        |> Json.Decode.decodeString decodeFooBarLookup
+    --> Ok lookupValue
+
+-}
+type alias Lookup =
+    Dict String Int

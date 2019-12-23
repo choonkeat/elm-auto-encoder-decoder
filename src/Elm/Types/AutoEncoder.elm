@@ -131,9 +131,9 @@ encodeSetSet encoder =
     Set.toList >> encodeList encoder
 
 
-encodeDictDict : (a -> String) -> (b -> Json.Encode.Value) -> (Dict.Dict a b) -> Json.Encode.Value
-encodeDictDict =
-    Json.Encode.dict
+encodeDictDict : (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> Dict.Dict a b -> Json.Encode.Value
+encodeDictDict keyEncoder =
+    Json.Encode.dict (\\k -> Json.Encode.encode 0 (keyEncoder k))
 
 
 --
@@ -174,9 +174,18 @@ decodeSetSet =
     Json.Decode.list >> Json.Decode.map Set.fromList
 
 
-decodeDictDict : Json.Decode.Decoder a -> Json.Decode.Decoder (Dict.Dict String a)
-decodeDictDict =
-    Json.Decode.dict
+decodeDictDict : Json.Decode.Decoder comparable -> Json.Decode.Decoder b -> Json.Decode.Decoder (Dict.Dict comparable b)
+decodeDictDict keyDecoder valueDecoder =
+    Json.Decode.dict valueDecoder
+    |> Json.Decode.map (\\dict ->
+        Dict.foldl (\\string v acc ->
+            case Json.Decode.decodeString keyDecoder string of
+                Ok k ->
+                    Dict.insert k v acc
+                Err _ ->
+                    acc
+        ) Dict.empty dict
+    )
 
 
 """

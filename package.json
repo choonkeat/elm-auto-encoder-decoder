@@ -3,7 +3,7 @@
   "bin": {
     "elm-auto-encoder-decoder": "./index.js"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Watch for file changes and auto generate JSON encoder and decoder for *.elm types",
   "main": "index.js",
   "directories": {
