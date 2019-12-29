@@ -136,6 +136,16 @@ encodeDictDict keyEncoder =
     Json.Encode.dict (\\k -> Json.Encode.encode 0 (keyEncoder k))
 
 
+encodeResultResult : (x -> Json.Encode.Value) -> (a -> Json.Encode.Value) -> Result.Result x a -> Json.Encode.Value
+encodeResultResult encodex encodea result =
+    case result of
+        Err x ->
+            Json.Encode.list identity [ Json.Encode.string "Result.Err", encodex x ]
+
+        Ok a ->
+            Json.Encode.list identity [ Json.Encode.string "Result.Ok", encodea a ]
+
+
 --
 
 
@@ -188,6 +198,21 @@ decodeDictDict keyDecoder valueDecoder =
     )
 
 
+decodeResultResult : Json.Decode.Decoder x -> Json.Decode.Decoder a -> Json.Decode.Decoder (Result.Result x a)
+decodeResultResult decodex decodea =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\\word ->
+                case word of
+                    "Result.Err" ->
+                        Json.Decode.succeed Err |> Json.Decode.Pipeline.custom (Json.Decode.index 1 decodex)
+
+                    "Result.Ok" ->
+                        Json.Decode.succeed Ok |> Json.Decode.Pipeline.custom (Json.Decode.index 1 decodea)
+
+                    _ ->
+                        Json.Decode.fail ("Unexpected Result.Result: " ++ word)
+            )
 """
         ++ String.join "\n\n" (Dict.foldl (\k v acc -> produceEncoder file (qualifyType file.importResolver_ v) :: acc) [] filteredTypes)
         ++ "\n\n"
