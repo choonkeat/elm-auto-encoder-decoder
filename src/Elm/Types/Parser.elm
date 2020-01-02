@@ -270,6 +270,95 @@ typeName =
            )
 
 
+type NestedTypeName
+    = NestedTypeName TitleCaseDotPhrase (List NestedTypeName)
+    | NestedTypeParam String
+
+
+nestedTypeParam : Parser.Parser NestedTypeName
+nestedTypeParam =
+    Parser.succeed ()
+        |. Parser.chompIf Char.isLower
+        |. Parser.chompWhile (\c -> Char.isAlpha c && Char.isLower c)
+        |> Parser.getChompedString
+        |> Parser.map NestedTypeParam
+
+
+{-|
+
+    import Parser
+
+    maybeString : NestedTypeName
+    maybeString =
+        NestedTypeName (TitleCaseDotPhrase "Maybe")
+            [ NestedTypeName (TitleCaseDotPhrase "String") [] ]
+
+    Parser.run nestedTypeName "Maybe String"
+    --> Ok maybeString
+
+    Parser.run nestedTypeName "List (Maybe String)"
+    --> Ok (NestedTypeName (TitleCaseDotPhrase "List") [ maybeString ])
+
+    resultXInt : NestedTypeName
+    resultXInt =
+        NestedTypeName (TitleCaseDotPhrase "Result")
+            [ NestedTypeParam "x", NestedTypeName (TitleCaseDotPhrase "Int") [] ]
+
+    Parser.run nestedTypeName "Result x Int"
+    --> Ok resultXInt
+
+    Parser.run nestedTypeName "Maybe (Result x Int)"
+    --> Ok (NestedTypeName (TitleCaseDotPhrase "Maybe") [ resultXInt ])
+
+    Parser.run nestedTypeName "Dict x (Result x Int)"
+    --> Ok (NestedTypeName (TitleCaseDotPhrase "Dict") [ NestedTypeParam "x", resultXInt ])
+
+-}
+nestedTypeName : Parser.Parser NestedTypeName
+nestedTypeName =
+    Parser.succeed NestedTypeName
+        |= titleCaseDotPhrase
+        |. Parser.spaces
+        |= nestedTypeTokens
+
+
+nestedTypeTokens : Parser.Parser (List NestedTypeName)
+nestedTypeTokens =
+    let
+        nestedTypeTokensHelp revList =
+            Parser.oneOf
+                [ Parser.succeed (\s -> Parser.Loop (s :: revList))
+                    |= parenthesised nestedTypeName
+                    |. Parser.spaces
+                , Parser.succeed (\s -> Parser.Loop (NestedTypeName s [] :: revList))
+                    |= titleCaseDotPhrase
+                    |. Parser.spaces
+                , Parser.succeed (\s -> Parser.Loop (s :: revList))
+                    |= nestedTypeParam
+                    |. Parser.spaces
+                , Parser.succeed ()
+                    |> Parser.map (\_ -> Parser.Done (List.reverse revList))
+                ]
+    in
+    Parser.loop [] nestedTypeTokensHelp
+
+
+parenthesised : Parser.Parser a -> Parser.Parser a
+parenthesised parser =
+    Parser.multiComment "(" ")" Parser.Nestable
+        |> Parser.getChompedString
+        |> Parser.map (\s -> String.dropRight 1 (String.dropLeft 1 s))
+        |> Parser.andThen
+            (\s ->
+                case Parser.run parser s of
+                    Ok value ->
+                        Parser.succeed value
+
+                    Err err ->
+                        Parser.problem (Parser.deadEndsToString err)
+            )
+
+
 {-|
 
     import Parser
