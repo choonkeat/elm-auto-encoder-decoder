@@ -15,6 +15,17 @@ type TitleCaseDotPhrase
     = TitleCaseDotPhrase String
 
 
+{-|
+
+    import Parser
+
+    Parser.run titleCaseWord "Elm.Types.Parser a b"
+    --> Ok ("Elm")
+
+    Parser.run titleCaseWord "elm.Types.Parser a b"
+    --> Err [{ col = 1, problem = Parser.UnexpectedChar, row = 1 }]
+
+-}
 titleCaseWord =
     Parser.succeed ()
         |. Parser.chompIf Char.isUpper
@@ -51,31 +62,48 @@ titleCaseDotPhrase =
         |= loopedParser
 
 
-parenList : Parser.Parser (List String)
-parenList =
+{-| Parsing the section after `module X exposing` or `import X exposing`
+
+    import Parser
+
+    Parser.run namedExports "((=>), world)"
+    --> Ok ["=>", "world"]
+
+    Parser.run namedExports "(hello, (=>))"
+    --> Ok ["hello", "=>"]
+
+    Parser.run namedExports "(hello world)"
+    --> Err [{ col = 8, problem = Parser.Expecting ",", row = 1 },{ col = 8, problem = Parser.Expecting ")", row = 1 }]
+
+    Parser.run namedExports "hello world"
+    --> Err [{ col = 1, problem = Parser.Expecting "(", row = 1 }]
+
+-}
+namedExports : Parser.Parser (List String)
+namedExports =
     Parser.sequence
         { start = "("
         , separator = ","
         , end = ")"
         , spaces = Parser.spaces
-        , item = parenWord
+        , item = namedExport
         , trailing = Parser.Forbidden
         }
 
 
-{-|
+{-| Parsing a named export; removes parenthesis
 
     import Parser
 
-    Parser.run parenWord "(=>), world"
+    Parser.run namedExport "(=>), world"
     --> Ok "=>"
 
-    Parser.run parenWord "hello world"
+    Parser.run namedExport "hello world"
     --> Ok "hello"
 
 -}
-parenWord : Parser.Parser String
-parenWord =
+namedExport : Parser.Parser String
+namedExport =
     let
         wordInParen =
             Parser.chompWhile (isNoneOf [ ' ', ',', ')', '(' ])
@@ -122,7 +150,7 @@ moduleDefinition =
         |. Parser.spaces
         |. Parser.keyword "exposing"
         |. Parser.spaces
-        |= (parenList
+        |= (namedExports
                 |> Parser.map
                     (\list ->
                         case list of
@@ -177,7 +205,7 @@ importDefinition =
             [ Parser.succeed identity
                 |. Parser.keyword "exposing"
                 |. Parser.spaces
-                |= (parenList
+                |= (namedExports
                         |> Parser.map
                             (\list ->
                                 case list of
@@ -276,48 +304,6 @@ customTypeConstructorList =
     Parser.loop [] customTypeConstructorListHelp
 
 
-{-| NestedString
--}
-type NS
-    = NS String (List NS)
-
-
-
---
--- {-| Parser.run constructorLiteral "(OnEvent Request (Result x a))"
--- --> Ok (NS "OnEvent" [NS "Request" [], NS "Result" [NS "x" [], NS "a" []]])
---
---     import Parser
---
---     Parser.run constructorLiteral "One Two (Three)"
---     --> Ok (NS "One" [NS "Two" [], NS "Three" []])
---
--- -}
--- constructorLiteral : Parser.Parser NS
--- constructorLiteral =
---     let
---         helper revList =
---             Parser.oneOf
---                 [ Parser.succeed (\s -> )
---                     |= Parser.
---                 ]
---     in
---     Parser.loop [] helper
-
-
-{-|
-
-    import Parser
-
-    typesFromCustomTypeConstructor (CustomTypeConstructor "Hello")
-    --> NS "Hello" []
-
--}
-typesFromCustomTypeConstructor : CustomTypeConstructor -> NS
-typesFromCustomTypeConstructor (CustomTypeConstructor s) =
-    NS s []
-
-
 {-|
 
     import Parser
@@ -339,6 +325,9 @@ typesFromCustomTypeConstructor (CustomTypeConstructor s) =
     """))
     --> Ok orderCustomType
 
+    nameFromCustomType orderCustomType
+    --> TypeName "Order" []
+
     maybeCustomType : CustomType
     maybeCustomType =
         CustomType
@@ -354,6 +343,9 @@ typesFromCustomTypeConstructor (CustomTypeConstructor s) =
     """))
     --> Ok maybeCustomType
 
+    nameFromCustomType maybeCustomType
+    --> TypeName "Maybe" [ TypeParam "a" ]
+
     dictCustomType : CustomType
     dictCustomType =
         CustomType
@@ -365,6 +357,9 @@ typesFromCustomTypeConstructor (CustomTypeConstructor s) =
         type Dict a b = Dict (Set (a, b))
     """))
     --> Ok dictCustomType
+
+    nameFromCustomType dictCustomType
+    --> TypeName "Dict" [ TypeParam "a", TypeParam "b" ]
 
 -}
 customType : Parser.Parser CustomType
@@ -819,15 +814,6 @@ fileContent =
         fileContentHelp
 
 
-
---
-
-
-isNoneOf : List Char -> Char -> Bool
-isNoneOf characters char =
-    not (List.member char characters)
-
-
 {-| <https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#lineComment>
 <https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#multiComment>
 -}
@@ -852,8 +838,17 @@ comments =
             Parser.oneOf
                 [ Parser.lineComment "--"
                 , Parser.multiComment "{-" "-}" Parser.Nestable
-                , Parser.spaces -- only here
+                , Parser.spaces
                 ]
+
+
+
+--
+
+
+isNoneOf : List Char -> Char -> Bool
+isNoneOf characters char =
+    not (List.member char characters)
 
 
 {-|
