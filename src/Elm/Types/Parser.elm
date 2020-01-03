@@ -1,23 +1,15 @@
 module Elm.Types.Parser exposing (..)
 
 import Dict exposing (Dict)
+import Elm.Types exposing (..)
 import Parser exposing ((|.), (|=), Parser)
 import Set exposing (Set)
-
-
-{-| module Elm.Types.Parser exposing (..)
--}
-type ModuleDefinition
-    = ModuleDefinition TitleCaseDotPhrase Exposing
-
-
-type TitleCaseDotPhrase
-    = TitleCaseDotPhrase String
 
 
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run titleCaseWord "Elm.Types.Parser a b"
     --> Ok ("Elm")
@@ -36,6 +28,7 @@ titleCaseWord =
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run titleCaseDotPhrase "Elm.Types.Parser a b"
     --> Ok (TitleCaseDotPhrase "Elm.Types.Parser")
@@ -65,12 +58,16 @@ titleCaseDotPhrase =
 {-| Parsing the section after `module X exposing` or `import X exposing`
 
     import Parser
+    import Elm.Types exposing (..)
+
+    Parser.run namedExports "(..)"
+    --> Ok ExposingEverything
 
     Parser.run namedExports "((=>), world)"
-    --> Ok ["=>", "world"]
+    --> Ok (ExposingOnly ["=>", "world"])
 
     Parser.run namedExports "(hello, (=>))"
-    --> Ok ["hello", "=>"]
+    --> Ok (ExposingOnly ["hello", "=>"])
 
     Parser.run namedExports "(hello world)"
     --> Err [{ col = 8, problem = Parser.Expecting ",", row = 1 },{ col = 8, problem = Parser.Expecting ")", row = 1 }]
@@ -79,7 +76,7 @@ titleCaseDotPhrase =
     --> Err [{ col = 1, problem = Parser.Expecting "(", row = 1 }]
 
 -}
-namedExports : Parser.Parser (List String)
+namedExports : Parser.Parser Exposing
 namedExports =
     Parser.sequence
         { start = "("
@@ -89,11 +86,21 @@ namedExports =
         , item = namedExport
         , trailing = Parser.Forbidden
         }
+        |> Parser.map
+            (\list ->
+                case list of
+                    [ ".." ] ->
+                        ExposingEverything
+
+                    _ ->
+                        ExposingOnly list
+            )
 
 
 {-| Parsing a named export; removes parenthesis
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run namedExport "(=>), world"
     --> Ok "=>"
@@ -122,108 +129,74 @@ namedExport =
         ]
 
 
-type Exposing
-    = ExposingEverything
-    | ExposingOnly (List String)
-
-
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run moduleDefinition "module Elm.Types.Parser exposing (..)"
-    --> Ok (ModuleDefinition (TitleCaseDotPhrase "Elm.Types.Parser") ExposingEverything)
+    --> Ok (ModuleDef (TitleCaseDotPhrase "Elm.Types.Parser") ExposingEverything)
 
     Parser.run moduleDefinition "module Elm.Types.Parser exposing (fieldName, moduleDefinition)"
-    --> Ok (ModuleDefinition (TitleCaseDotPhrase "Elm.Types.Parser") (ExposingOnly ["fieldName", "moduleDefinition"]))
+    --> Ok (ModuleDef (TitleCaseDotPhrase "Elm.Types.Parser") (ExposingOnly ["fieldName", "moduleDefinition"]))
 
     Parser.run moduleDefinition "module Parser exposing ((|.), (|=), Parser, Step(..))"
-    --> Ok (ModuleDefinition (TitleCaseDotPhrase "Parser") (ExposingOnly ["|.", "|=", "Parser", "Step(..)"]))
+    --> Ok (ModuleDef (TitleCaseDotPhrase "Parser") (ExposingOnly ["|.", "|=", "Parser", "Step(..)"]))
 
 -}
-moduleDefinition : Parser.Parser ModuleDefinition
+moduleDefinition : Parser.Parser ModuleDef
 moduleDefinition =
-    Parser.succeed ModuleDefinition
+    Parser.succeed ModuleDef
         |. Parser.keyword "module"
-        |. Parser.spaces
+        |. Parser.symbol " "
         |= titleCaseDotPhrase
-        |. Parser.spaces
+        |. Parser.symbol " "
         |. Parser.keyword "exposing"
-        |. Parser.spaces
-        |= (namedExports
-                |> Parser.map
-                    (\list ->
-                        case list of
-                            [ ".." ] ->
-                                ExposingEverything
-
-                            _ ->
-                                ExposingOnly list
-                    )
-           )
-
-
-{-| import Json.Decoder as D exposing (Value)
--}
-type ImportDefinition
-    = ImportDefinition TitleCaseDotPhrase (Maybe String) Exposing
+        |. Parser.symbol " "
+        |= namedExports
 
 
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run importDefinition "import Elm.Types.Parser exposing (..)"
-    --> Ok (ImportDefinition (TitleCaseDotPhrase "Elm.Types.Parser") Nothing ExposingEverything)
+    --> Ok (ImportDef (TitleCaseDotPhrase "Elm.Types.Parser") Nothing ExposingEverything)
 
     Parser.run importDefinition "import Elm.Types.Parser as X exposing (hello)"
-    --> Ok (ImportDefinition (TitleCaseDotPhrase "Elm.Types.Parser") (Just "X") (ExposingOnly ["hello"]))
+    --> Ok (ImportDef (TitleCaseDotPhrase "Elm.Types.Parser") (Just "X") (ExposingOnly ["hello"]))
 
     Parser.run importDefinition "import Elm.Types.Parser as X"
-    --> Ok (ImportDefinition (TitleCaseDotPhrase "Elm.Types.Parser") (Just "X") (ExposingOnly []))
+    --> Ok (ImportDef (TitleCaseDotPhrase "Elm.Types.Parser") (Just "X") (ExposingOnly []))
 
     Parser.run importDefinition "import Elm.Types.Parser"
-    --> Ok (ImportDefinition (TitleCaseDotPhrase "Elm.Types.Parser") Nothing (ExposingOnly []))
+    --> Ok (ImportDef (TitleCaseDotPhrase "Elm.Types.Parser") Nothing (ExposingOnly []))
 
 -}
-importDefinition : Parser.Parser ImportDefinition
+importDefinition : Parser.Parser ImportDef
 importDefinition =
-    Parser.succeed ImportDefinition
+    Parser.succeed ImportDef
         |. Parser.keyword "import"
-        |. Parser.spaces
+        |. Parser.symbol " "
         |= titleCaseDotPhrase
-        |. Parser.spaces
         |= Parser.oneOf
-            [ Parser.succeed Just
-                |. Parser.keyword "as"
-                |. Parser.spaces
-                |= titleCaseWord
+            [ Parser.backtrackable <|
+                Parser.succeed Just
+                    |. Parser.symbol " "
+                    |. Parser.keyword "as"
+                    |. Parser.symbol " "
+                    |= titleCaseWord
             , Parser.succeed Nothing
             ]
-        |. Parser.spaces
         |= Parser.oneOf
             [ Parser.succeed identity
+                |. Parser.symbol " "
                 |. Parser.keyword "exposing"
-                |. Parser.spaces
-                |= (namedExports
-                        |> Parser.map
-                            (\list ->
-                                case list of
-                                    [ ".." ] ->
-                                        ExposingEverything
-
-                                    _ ->
-                                        ExposingOnly list
-                            )
-                   )
+                |. Parser.symbol " "
+                |= namedExports
             , Parser.succeed (ExposingOnly [])
             ]
-
-
-type alias CustomType =
-    { name : TypeName
-    , constructors : List CustomTypeConstructor
-    }
 
 
 nameFromCustomType : CustomType -> TypeName
@@ -231,20 +204,13 @@ nameFromCustomType { name } =
     name
 
 
-type TypeParam
-    = TypeParam String
-
-
-type TypeName
-    = TypeName String (List TypeParam)
-
-
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run typeName "Alpha.Beta.Charlie a b | Dude"
-    --> Ok (TypeName "Alpha.Beta.Charlie" [ TypeParam "a", TypeParam "b" ])
+    --> Ok (TypeName "Alpha.Beta.Charlie" [ "a", "b" ])
 
 -}
 typeName : Parser.Parser TypeName
@@ -261,18 +227,13 @@ typeName =
                             []
 
                         else
-                            List.map TypeParam (String.words s)
+                            String.words s
                     )
            )
 
 
-type CustomTypeConstructor
-    = CustomTypeConstructor TitleCaseDotPhrase (List CustomTypeConstructor)
-    | ConstructorTypeParam String
-    | Tuple2 CustomTypeConstructor CustomTypeConstructor
-    | Tuple3 CustomTypeConstructor CustomTypeConstructor CustomTypeConstructor
-
-
+{-| Refers to the `x` or `a` in `Result x a`
+-}
 constructorTypeParam : Parser.Parser CustomTypeConstructor
 constructorTypeParam =
     Parser.succeed ()
@@ -282,9 +243,10 @@ constructorTypeParam =
         |> Parser.map ConstructorTypeParam
 
 
-{-|
+{-| Refers to the entire `Result x a`, thus must begin with `titleCaseDotPhrase`
 
     import Parser
+    import Elm.Types exposing (..)
 
     maybeString : CustomTypeConstructor
     maybeString =
@@ -320,6 +282,14 @@ nestedTypeName =
         |= nestedTypeTokens
 
 
+{-| Refers to the whole or any of valid token `Result x (Maybe a)`
+
+  - `Result x (Maybe a)`
+  - `x`
+  - `Maybe a`
+  - `a`
+
+-}
 anyCustomTypeConstructor : Parser.Parser CustomTypeConstructor
 anyCustomTypeConstructor =
     Parser.oneOf
@@ -346,6 +316,8 @@ nestedTypeTokens =
     Parser.loop [] nestedTypeTokensHelp
 
 
+{-| Refers to `a, b` of `Coordinate (a, b)`
+-}
 tupleParams : Parser.Parser CustomTypeConstructor
 tupleParams =
     let
@@ -414,6 +386,7 @@ customTypeConstructorList =
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     orderCustomType : CustomType
     orderCustomType =
@@ -438,7 +411,7 @@ customTypeConstructorList =
     maybeCustomType : CustomType
     maybeCustomType =
         CustomType
-            (TypeName "Maybe" [ TypeParam "a" ])
+            (TypeName "Maybe" [ "a" ])
             [ CustomTypeConstructor (TitleCaseDotPhrase "Nothing") []
             , CustomTypeConstructor (TitleCaseDotPhrase "Just") [ ConstructorTypeParam "a" ]
             ]
@@ -451,12 +424,12 @@ customTypeConstructorList =
     --> Ok maybeCustomType
 
     nameFromCustomType maybeCustomType
-    --> TypeName "Maybe" [ TypeParam "a" ]
+    --> TypeName "Maybe" [ "a" ]
 
     dictCustomType : CustomType
     dictCustomType =
         CustomType
-            (TypeName "Dict" [ TypeParam "a", TypeParam "b" ])
+            (TypeName "Dict" [ "a", "b" ])
             [ CustomTypeConstructor (TitleCaseDotPhrase "Dict")
                 [ CustomTypeConstructor (TitleCaseDotPhrase "Set")
                     [ Tuple2 (ConstructorTypeParam "a") (ConstructorTypeParam "b") ]
@@ -469,7 +442,7 @@ customTypeConstructorList =
     --> Ok dictCustomType
 
     nameFromCustomType dictCustomType
-    --> TypeName "Dict" [ TypeParam "a", TypeParam "b" ]
+    --> TypeName "Dict" [ "a", "b" ]
 
 -}
 customType : Parser.Parser CustomType
@@ -484,27 +457,14 @@ customType =
         |= customTypeConstructorList
 
 
-type FieldName
-    = FieldName String
-
-
-type FieldPair
-    = FieldPair FieldName TypeName
-
-
-type TypeAlias
-    = AliasRecordType TypeName (List FieldPair)
-    | AliasCustomType CustomType
-
-
 nameFromTypeAlias : TypeAlias -> TypeName
 nameFromTypeAlias t =
     case t of
         AliasRecordType name _ ->
             name
 
-        AliasCustomType t2 ->
-            nameFromCustomType t2
+        AliasCustomType name t2 ->
+            name
 
 
 fieldName : Parser.Parser FieldName
@@ -519,30 +479,41 @@ fieldName =
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run fieldPair "userID : String"
-    --> Ok (FieldPair (FieldName "userID") (TypeName "String" []))
+    --> Ok (CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []))
 
 -}
 fieldPair : Parser.Parser FieldPair
 fieldPair =
-    Parser.succeed FieldPair
-        |= fieldName
-        |. comments
-        |. Parser.symbol ":"
-        |. comments
-        |= typeName
+    Parser.oneOf
+        [ Parser.backtrackable <|
+            Parser.succeed CustomField
+                |= fieldName
+                |. Parser.symbol " "
+                |. Parser.symbol ":"
+                |. Parser.symbol " "
+                |= nestedTypeName
+        , Parser.succeed NestedField
+            |= fieldName
+            |. Parser.symbol " "
+            |. Parser.symbol ":"
+            |. Parser.symbol " "
+            |= Parser.lazy (\() -> fieldPairList)
+        ]
 
 
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run fieldPairList ("""{
           userID : String
         , email : Email
     }""")
-    --> Ok [(FieldPair (FieldName "userID") (TypeName "String" [])),FieldPair (FieldName "email") (TypeName "Email" [])]
+    --> Ok [ CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []), CustomField (FieldName "email") (CustomTypeConstructor (TitleCaseDotPhrase "Email") []) ]
 
 -}
 fieldPairList : Parser.Parser (List FieldPair)
@@ -573,7 +544,7 @@ aliasRecordType =
 
 aliasCustomType : Parser.Parser TypeAlias
 aliasCustomType =
-    Parser.succeed (\name list -> AliasCustomType (CustomType name list))
+    Parser.succeed AliasCustomType
         |. Parser.keyword "type"
         |. comments
         |. Parser.keyword "alias"
@@ -582,21 +553,34 @@ aliasCustomType =
         |. comments
         |. Parser.symbol "="
         |. comments
-        |= customTypeConstructorList
+        |= Parser.andThen
+            (\list ->
+                case list of
+                    [ ct ] ->
+                        Parser.succeed ct
+
+                    _ ->
+                        Parser.problem "Bad type alias"
+            )
+            customTypeConstructorList
 
 
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     Parser.run typeAlias ("""type alias User = {
           userID : String
         , email : Email
     }""")
-    --> Ok (AliasRecordType (TypeName "User" []) [(FieldPair (FieldName "userID") (TypeName "String" [])),FieldPair (FieldName "email") (TypeName "Email" [])])
+    --> Ok (AliasRecordType (TypeName "User" []) [ CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []), CustomField (FieldName "email") (CustomTypeConstructor (TitleCaseDotPhrase "Email") []) ])
 
     Parser.run typeAlias ("""type alias User = String""")
-    --> Ok (AliasCustomType (CustomType (TypeName "User" []) [CustomTypeConstructor (TitleCaseDotPhrase "String") []]))
+    --> Ok (AliasCustomType (TypeName "User" []) (CustomTypeConstructor (TitleCaseDotPhrase "String") []))
+
+    Parser.run typeAlias ("""type alias User = Dict String (Result x Int)""")
+    --> Ok (AliasCustomType (TypeName "User" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Int") []]]))
 
 -}
 typeAlias : Parser.Parser TypeAlias
@@ -607,24 +591,20 @@ typeAlias =
         ]
 
 
-type ElmType
-    = ElmCustomType CustomType
-    | ElmTypeAlias TypeAlias
-
-
-nameFromElmType : ElmType -> TypeName
-nameFromElmType elmType =
-    case elmType of
-        ElmCustomType t ->
+nameFromElmTypeDef : ElmTypeDef -> TypeName
+nameFromElmTypeDef elmTypeDef =
+    case elmTypeDef of
+        CustomTypeDef t ->
             nameFromCustomType t
 
-        ElmTypeAlias t ->
+        TypeAliasDef t ->
             nameFromTypeAlias t
 
 
 {-|
 
     import Parser
+    import Elm.Types exposing (..)
 
     orderCustomType : CustomType
     orderCustomType =
@@ -647,26 +627,26 @@ nameFromElmType elmType =
     userTypeAlias =
         AliasRecordType
             (TypeName "User" [])
-            [ FieldPair (FieldName "userID") (TypeName "String" [])
-            , FieldPair (FieldName "email") (TypeName "Email" [])
+            [ CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") [])
+            , CustomField (FieldName "email") (CustomTypeConstructor (TitleCaseDotPhrase "Email") [])
             ]
 
-    Parser.run elmTypeList (String.trim ("""
+    Parser.run elmTypeDefList (String.trim ("""
         type Order
             = LT
             | EQ
             | GT
     """))
-    --> Ok [ ElmCustomType orderCustomType ]
+    --> Ok [ CustomTypeDef orderCustomType ]
 
-    Parser.run elmTypeList (String.trim ("""
+    Parser.run elmTypeDefList (String.trim ("""
         type Bool
             = True
             | False
     """))
-    --> Ok [ ElmCustomType boolCustomType]
+    --> Ok [ CustomTypeDef boolCustomType]
 
-    Parser.run elmTypeList (String.trim ("""
+    Parser.run elmTypeDefList (String.trim ("""
         type Order
             = LT
             | EQ
@@ -674,39 +654,39 @@ nameFromElmType elmType =
             = True
             | False
     """))
-    --> Ok [ ElmCustomType orderCustomType, ElmCustomType boolCustomType]
+    --> Ok [ CustomTypeDef orderCustomType, CustomTypeDef boolCustomType]
 
-    Parser.run elmTypeList ("""type alias User = {
+    Parser.run elmTypeDefList ("""type alias User = {
           userID : String
         , email : Email
     }""")
-    --> Ok [ElmTypeAlias userTypeAlias]
+    --> Ok [TypeAliasDef userTypeAlias]
 
 
-    Parser.run elmTypeList ("""type Order
+    Parser.run elmTypeDefList ("""type Order
             = LT
             | EQ
             | GT\n\ntype alias User = {
           userID : String
         , email : Email
     }""")
-    --> Ok [ElmCustomType orderCustomType, ElmTypeAlias userTypeAlias]
+    --> Ok [CustomTypeDef orderCustomType, TypeAliasDef userTypeAlias]
 
 -}
-elmTypeList : Parser.Parser (List ElmType)
-elmTypeList =
+elmTypeDefList : Parser.Parser (List ElmTypeDef)
+elmTypeDefList =
     let
-        elmTypeListHelp revList =
+        elmTypeDefListHelp revList =
             Parser.oneOf
-                [ Parser.succeed (\s -> Parser.Loop (ElmTypeAlias s :: revList))
+                [ Parser.succeed (\s -> Parser.Loop (TypeAliasDef s :: revList))
                     |= Parser.backtrackable typeAlias
-                , Parser.succeed (\s -> Parser.Loop (ElmCustomType s :: revList))
+                , Parser.succeed (\s -> Parser.Loop (CustomTypeDef s :: revList))
                     |= customType
                 , Parser.succeed ()
                     |> Parser.map (\_ -> Parser.Done (List.reverse revList))
                 ]
     in
-    Parser.loop [] elmTypeListHelp
+    Parser.loop [] elmTypeDefListHelp
 
 
 problemIfEmpty : List a -> Parser (List a)
@@ -717,15 +697,6 @@ problemIfEmpty list =
 
         _ ->
             Parser.succeed list
-
-
-type alias ElmFile =
-    { modulePrefix : String
-    , imports : Set String -- ["Json.Decode"]
-    , importResolver_ : Dict String String -- Dict.fromList [("chompWhile", "Parser.Advanced.Parser")]
-    , knownTypes : Dict String ElmType -- Dict.fromList [("Json.Encode.Value", ...)]
-    , skipTypes : Set String
-    }
 
 
 qualifyName : Dict String String -> String -> String
@@ -751,12 +722,13 @@ qualifyConstructor dict ct =
 
 
 qualifyFieldPair : Dict String String -> FieldPair -> FieldPair
-qualifyFieldPair dict (FieldPair fname (TypeName tname typeParams)) =
-    let
-        qualifiedTypeParams =
-            List.map (\(TypeParam s) -> TypeParam (qualifyName dict s)) typeParams
-    in
-    FieldPair fname (TypeName (qualifyName dict tname) qualifiedTypeParams)
+qualifyFieldPair dict fieldpair =
+    case fieldpair of
+        CustomField (FieldName fname) ct ->
+            CustomField (FieldName (qualifyName dict fname)) (qualifyConstructor dict ct)
+
+        NestedField (FieldName fname) list ->
+            NestedField (FieldName (qualifyName dict fname)) (List.map (qualifyFieldPair dict) list)
 
 
 qualifyCustomType : Dict String String -> CustomType -> CustomType
@@ -771,17 +743,17 @@ qualifyCustomType dict { name, constructors } =
     { name = TypeName (qualifyName dict tname) typeParams, constructors = newConstructors }
 
 
-qualifyType : Dict String String -> ElmType -> ElmType
-qualifyType dict elmType =
-    case elmType of
-        ElmCustomType t ->
-            ElmCustomType (qualifyCustomType dict t)
+qualifyType : Dict String String -> ElmTypeDef -> ElmTypeDef
+qualifyType dict elmTypeDef =
+    case elmTypeDef of
+        CustomTypeDef t ->
+            CustomTypeDef (qualifyCustomType dict t)
 
-        ElmTypeAlias (AliasRecordType (TypeName tname typeParams) fieldPairs) ->
-            ElmTypeAlias (AliasRecordType (TypeName (qualifyName dict tname) typeParams) (List.map (qualifyFieldPair dict) fieldPairs))
+        TypeAliasDef (AliasRecordType (TypeName tname typeParams) fieldPairs) ->
+            TypeAliasDef (AliasRecordType (TypeName (qualifyName dict tname) typeParams) (List.map (qualifyFieldPair dict) fieldPairs))
 
-        ElmTypeAlias (AliasCustomType t) ->
-            ElmTypeAlias (AliasCustomType (qualifyCustomType dict t))
+        TypeAliasDef (AliasCustomType (TypeName tname typeParams) ct) ->
+            TypeAliasDef (AliasCustomType (TypeName (qualifyName dict tname) typeParams) (qualifyConstructor dict ct))
 
 
 parentModuleName : String -> String
@@ -789,8 +761,8 @@ parentModuleName =
     String.split "." >> List.reverse >> List.drop 1 >> List.reverse >> String.join "."
 
 
-addReferencedTypes : String -> ElmType -> ElmFile -> ElmFile
-addReferencedTypes modulePrefix elmType file =
+addReferencedTypes : String -> ElmTypeDef -> ElmFile -> ElmFile
+addReferencedTypes modulePrefix elmTypeDef file =
     let
         prefixIfMissing phrase maybeExist =
             case ( maybeExist, Set.member (parentModuleName phrase) file.imports ) of
@@ -800,8 +772,8 @@ addReferencedTypes modulePrefix elmType file =
                 _ ->
                     maybeExist
     in
-    case elmType of
-        ElmCustomType { constructors } ->
+    case elmTypeDef of
+        CustomTypeDef { constructors } ->
             let
                 newImportResolver =
                     List.foldl
@@ -824,25 +796,32 @@ addReferencedTypes modulePrefix elmType file =
             in
             { file | importResolver_ = newImportResolver }
 
-        ElmTypeAlias (AliasRecordType _ fieldPairs) ->
+        TypeAliasDef (AliasRecordType _ fieldPairs) ->
             let
                 newImportResolver =
                     List.foldl
-                        (\(FieldPair _ (TypeName s typeParams)) acc -> Dict.update s (prefixIfMissing s) acc)
+                        (\currentFieldPair acc ->
+                            case currentFieldPair of
+                                CustomField (FieldName fname) ct ->
+                                    Dict.update fname (prefixIfMissing fname) acc
+
+                                NestedField (FieldName fname) list ->
+                                    Dict.update fname (prefixIfMissing fname) acc
+                        )
                         file.importResolver_
                         fieldPairs
             in
             { file | importResolver_ = newImportResolver }
 
-        ElmTypeAlias (AliasCustomType t) ->
-            addReferencedTypes modulePrefix (ElmCustomType t) file
+        TypeAliasDef (AliasCustomType tname ct) ->
+            addReferencedTypes modulePrefix (CustomTypeDef { name = tname, constructors = [ ct ] }) file
 
 
-addElmType : ElmType -> ElmFile -> ElmFile
-addElmType elmType file =
+addElmTypeDef : ElmTypeDef -> ElmFile -> ElmFile
+addElmTypeDef elmTypeDef file =
     let
         (TypeName shortName typeParams) =
-            nameFromElmType elmType
+            nameFromElmTypeDef elmTypeDef
 
         absoluteName =
             file.modulePrefix ++ shortName
@@ -850,18 +829,18 @@ addElmType elmType file =
         newElmFile =
             addReferencedTypes
                 file.modulePrefix
-                elmType
+                elmTypeDef
                 { file | importResolver_ = Dict.insert shortName absoluteName file.importResolver_ }
     in
     if Set.member shortName file.skipTypes then
         file
 
     else
-        { newElmFile | knownTypes = Dict.insert shortName elmType file.knownTypes }
+        { newElmFile | knownTypes = Dict.insert shortName elmTypeDef file.knownTypes }
 
 
-addModuleDefinition : ElmFile -> ModuleDefinition -> String -> ElmFile
-addModuleDefinition file (ModuleDefinition (TitleCaseDotPhrase name) exposing_) moduleComments =
+addModuleDef : ElmFile -> ModuleDef -> String -> ElmFile
+addModuleDef file (ModuleDef (TitleCaseDotPhrase name) exposing_) moduleComments =
     let
         newSkipTypes =
             if String.startsWith "{- noauto " moduleComments then
@@ -878,8 +857,8 @@ addModuleDefinition file (ModuleDefinition (TitleCaseDotPhrase name) exposing_) 
     { file | modulePrefix = name ++ ".", skipTypes = newSkipTypes }
 
 
-addImportDefinition : ElmFile -> ImportDefinition -> ElmFile
-addImportDefinition file (ImportDefinition (TitleCaseDotPhrase name) maybeAliasName exposing_) =
+addImportDef : ElmFile -> ImportDef -> ElmFile
+addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_) =
     let
         newImportResolver =
             -- Dict.insert name name
@@ -909,7 +888,7 @@ addImportDefinition file (ImportDefinition (TitleCaseDotPhrase name) maybeAliasN
                 newFile =
                     { file | importResolver_ = Dict.insert x namespaced newImportResolver }
             in
-            addImportDefinition newFile (ImportDefinition (TitleCaseDotPhrase name) maybeAliasName (ExposingOnly xs))
+            addImportDef newFile (ImportDef (TitleCaseDotPhrase name) maybeAliasName (ExposingOnly xs))
 
 
 fileContent : Parser.Parser ElmFile
@@ -917,14 +896,14 @@ fileContent =
     let
         fileContentHelp currentFile =
             Parser.oneOf
-                [ Parser.succeed (List.foldl addElmType currentFile >> Parser.Loop)
+                [ Parser.succeed (List.foldl addElmTypeDef currentFile >> Parser.Loop)
                     |. comments
-                    |= Parser.andThen problemIfEmpty elmTypeList
+                    |= Parser.andThen problemIfEmpty elmTypeDefList
                     |. comments
-                , Parser.succeed (\m c -> Parser.Loop (addModuleDefinition currentFile m c))
+                , Parser.succeed (\m c -> Parser.Loop (addModuleDef currentFile m c))
                     |= moduleDefinition
                     |= (comments |> Parser.getChompedString |> Parser.map String.trim)
-                , Parser.succeed (addImportDefinition currentFile >> Parser.Loop)
+                , Parser.succeed (addImportDef currentFile >> Parser.Loop)
                     |= importDefinition
                     |. comments
                 , Parser.succeed (Parser.Done currentFile)

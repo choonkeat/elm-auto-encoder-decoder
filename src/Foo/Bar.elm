@@ -10,36 +10,36 @@ module Foo.Bar exposing (..)
     optionValue =
         None
 
-    encodeFooBarOption Json.Encode.int optionValue
+    encodeOption Json.Encode.int optionValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString (decodeFooBarOption Json.Decode.int)
+        |> Json.Decode.decodeString (decodeOption Json.Decode.int)
     --> Ok optionValue
 
     helloValue : Hello Int
     helloValue =
-        Good "Morning" "5.45"
+        Good "Morning" (Ok (Just "5.45"))
 
-    encodeFooBarHello Json.Encode.int helloValue
+    encodeHello Json.Encode.int helloValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString (decodeFooBarHello Json.Decode.int)
+        |> Json.Decode.decodeString (decodeHello Json.Decode.int)
     --> Ok helloValue
 
     personValue : Person
     personValue =
         { name = "Foo", age = 42 }
 
-    encodeFooBarPerson personValue
+    encodePerson personValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString decodeFooBarPerson
+        |> Json.Decode.decodeString decodePerson
     --> Ok personValue
 
     payloadValue : Payload
     payloadValue =
         { title = "Hello", author = { name = "Foo", age = 42 } }
 
-    encodeFooBarPayload payloadValue
+    encodePayload payloadValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString decodeFooBarPayload
+        |> Json.Decode.decodeString decodePayload
     --> Ok payloadValue
 
 -}
@@ -58,7 +58,7 @@ type alias Choice =
 
 type Hello x
     = Hello
-    | Good String String
+    | Good String (Result x (Maybe String))
 
 
 type alias Person =
@@ -68,7 +68,8 @@ type alias Person =
 
 
 type alias Payload =
-    { title : String
+    { -- title : { h1 : String, h2 : String }
+      title : String
     , author : Person
     }
 

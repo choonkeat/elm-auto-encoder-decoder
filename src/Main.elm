@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Elm.Types exposing (ElmFile)
 import Elm.Types.AutoEncoder
 import Elm.Types.Parser
 import Json.Decode
@@ -38,18 +39,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         OnFileRead (Ok event) ->
-            case Parser.run Elm.Types.Parser.fileContent event.data of
-                Err err ->
-                    let
-                        _ =
-                            Debug.log "Elm.Types.Parser.fileContent" ( err, event.filename )
-                    in
-                    ( model, Cmd.none )
-
-                Ok elmFile ->
+            case ( stdlib, Parser.run Elm.Types.Parser.fileContent event.data ) of
+                ( Ok prelude, Ok elmFile ) ->
                     let
                         content =
-                            Elm.Types.AutoEncoder.produceSourceCode elmFile
+                            Elm.Types.AutoEncoder.produceSourceCode prelude elmFile
 
                         targetFilename =
                             String.replace ".elm" "/Auto.elm" event.filename
@@ -61,6 +55,20 @@ update msg model =
                                 }
                     in
                     ( model, cmd )
+
+                ( _, Err err ) ->
+                    let
+                        _ =
+                            Debug.log "Elm.Types.Parser.fileContent" ( err, event.filename )
+                    in
+                    ( model, Cmd.none )
+
+                ( Err err, _ ) ->
+                    let
+                        _ =
+                            Debug.log "stdlib" err
+                    in
+                    ( model, Cmd.none )
 
         OnFileRead (Err err) ->
             let
@@ -83,6 +91,32 @@ subscriptions model =
         [ onReadUTF8 OnFileRead
         , onWriteUTF OnFileWritten
         ]
+
+
+
+--
+
+
+{-| Define some built-in types; use our own Parser to generate encoder/decoder for these
+-}
+stdlib : Result (List Parser.DeadEnd) String
+stdlib =
+    let
+        data =
+            """
+            type Maybe a = Nothing | Just a
+            type Result x a = Err x | Ok a
+            """
+    in
+    case Parser.run Elm.Types.Parser.fileContent data of
+        Ok elmFile ->
+            Elm.Types.AutoEncoder.encoderDefinitions elmFile
+                ++ "\n\n"
+                ++ Elm.Types.AutoEncoder.decoderDefinitions elmFile
+                |> Ok
+
+        Err err ->
+            Err err
 
 
 
