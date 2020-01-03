@@ -239,10 +239,6 @@ type TypeName
     = TypeName String (List TypeParam)
 
 
-type CustomTypeConstructor
-    = CustomTypeConstructor String
-
-
 {-|
 
     import Parser
@@ -270,77 +266,116 @@ typeName =
            )
 
 
-type NestedTypeName
-    = NestedTypeName TitleCaseDotPhrase (List NestedTypeName)
-    | NestedTypeParam String
+type CustomTypeConstructor
+    = CustomTypeConstructor TitleCaseDotPhrase (List CustomTypeConstructor)
+    | ConstructorTypeParam String
+    | Tuple2 CustomTypeConstructor CustomTypeConstructor
+    | Tuple3 CustomTypeConstructor CustomTypeConstructor CustomTypeConstructor
 
 
-nestedTypeParam : Parser.Parser NestedTypeName
-nestedTypeParam =
+constructorTypeParam : Parser.Parser CustomTypeConstructor
+constructorTypeParam =
     Parser.succeed ()
         |. Parser.chompIf Char.isLower
         |. Parser.chompWhile (\c -> Char.isAlpha c && Char.isLower c)
         |> Parser.getChompedString
-        |> Parser.map NestedTypeParam
+        |> Parser.map ConstructorTypeParam
 
 
 {-|
 
     import Parser
 
-    maybeString : NestedTypeName
+    maybeString : CustomTypeConstructor
     maybeString =
-        NestedTypeName (TitleCaseDotPhrase "Maybe")
-            [ NestedTypeName (TitleCaseDotPhrase "String") [] ]
+        CustomTypeConstructor (TitleCaseDotPhrase "Maybe")
+            [ CustomTypeConstructor (TitleCaseDotPhrase "String") [] ]
 
     Parser.run nestedTypeName "Maybe String"
     --> Ok maybeString
 
     Parser.run nestedTypeName "List (Maybe String)"
-    --> Ok (NestedTypeName (TitleCaseDotPhrase "List") [ maybeString ])
+    --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "List") [ maybeString ])
 
-    resultXInt : NestedTypeName
+    resultXInt : CustomTypeConstructor
     resultXInt =
-        NestedTypeName (TitleCaseDotPhrase "Result")
-            [ NestedTypeParam "x", NestedTypeName (TitleCaseDotPhrase "Int") [] ]
+        CustomTypeConstructor (TitleCaseDotPhrase "Result")
+            [ ConstructorTypeParam "x", CustomTypeConstructor (TitleCaseDotPhrase "Int") [] ]
 
     Parser.run nestedTypeName "Result x Int"
     --> Ok resultXInt
 
     Parser.run nestedTypeName "Maybe (Result x Int)"
-    --> Ok (NestedTypeName (TitleCaseDotPhrase "Maybe") [ resultXInt ])
+    --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ resultXInt ])
 
     Parser.run nestedTypeName "Dict x (Result x Int)"
-    --> Ok (NestedTypeName (TitleCaseDotPhrase "Dict") [ NestedTypeParam "x", resultXInt ])
+    --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [ ConstructorTypeParam "x", resultXInt ])
 
 -}
-nestedTypeName : Parser.Parser NestedTypeName
+nestedTypeName : Parser.Parser CustomTypeConstructor
 nestedTypeName =
-    Parser.succeed NestedTypeName
+    Parser.succeed CustomTypeConstructor
         |= titleCaseDotPhrase
-        |. Parser.spaces
+        |. Parser.oneOf [ Parser.symbol " ", Parser.succeed () ]
         |= nestedTypeTokens
 
 
-nestedTypeTokens : Parser.Parser (List NestedTypeName)
+anyCustomTypeConstructor : Parser.Parser CustomTypeConstructor
+anyCustomTypeConstructor =
+    Parser.oneOf
+        [ Parser.backtrackable (parenthesised tupleParams)
+        , parenthesised nestedTypeName
+        , Parser.succeed (\s -> CustomTypeConstructor s [])
+            |= titleCaseDotPhrase
+        , constructorTypeParam
+        ]
+
+
+nestedTypeTokens : Parser.Parser (List CustomTypeConstructor)
 nestedTypeTokens =
     let
         nestedTypeTokensHelp revList =
             Parser.oneOf
-                [ Parser.succeed (\s -> Parser.Loop (s :: revList))
-                    |= parenthesised nestedTypeName
-                    |. Parser.spaces
-                , Parser.succeed (\s -> Parser.Loop (NestedTypeName s [] :: revList))
-                    |= titleCaseDotPhrase
-                    |. Parser.spaces
-                , Parser.succeed (\s -> Parser.Loop (s :: revList))
-                    |= nestedTypeParam
-                    |. Parser.spaces
+                [ Parser.succeed (\token -> Parser.Loop (token :: revList))
+                    |= anyCustomTypeConstructor
+                    |. Parser.oneOf [ Parser.symbol " ", Parser.succeed () ]
                 , Parser.succeed ()
                     |> Parser.map (\_ -> Parser.Done (List.reverse revList))
                 ]
     in
     Parser.loop [] nestedTypeTokensHelp
+
+
+tupleParams : Parser.Parser CustomTypeConstructor
+tupleParams =
+    let
+        tupleParamsHelp revList =
+            Parser.oneOf
+                [ Parser.succeed (\token -> Parser.Loop (token :: revList))
+                    |= anyCustomTypeConstructor
+                    |. Parser.oneOf
+                        [ Parser.succeed ()
+                            |. Parser.symbol ","
+                            |. Parser.symbol " "
+                        , Parser.succeed ()
+                        ]
+                , Parser.succeed ()
+                    |> Parser.map (\_ -> Parser.Done (List.reverse revList))
+                ]
+    in
+    Parser.loop [] tupleParamsHelp
+        |> Parser.andThen
+            (\list ->
+                case list of
+                    [ a, b ] ->
+                        Parser.succeed (Tuple2 a b)
+
+                    [ a, b, c ] ->
+                        Parser.succeed (Tuple3 a b c)
+
+                    _ ->
+                        Parser.problem ("Bad tuple: " ++ String.fromInt (List.length list) ++ " items")
+            )
 
 
 parenthesised : Parser.Parser a -> Parser.Parser a
@@ -355,25 +390,8 @@ parenthesised parser =
                         Parser.succeed value
 
                     Err err ->
-                        Parser.problem (Parser.deadEndsToString err)
+                        Parser.problem (Debug.toString err)
             )
-
-
-{-|
-
-    import Parser
-
-    Parser.run customTypeConstructor "Types.OnNotificationRegistered (Result.Result String String.String)"
-    --> Ok (CustomTypeConstructor "Types.OnNotificationRegistered (Result.Result String String.String)")
-
--}
-customTypeConstructor : Parser.Parser CustomTypeConstructor
-customTypeConstructor =
-    Parser.succeed ()
-        |. Parser.chompIf Char.isUpper
-        |. Parser.chompWhile (isNoneOf [ '\n', '\u{000D}', '|' ])
-        |> Parser.getChompedString
-        |> Parser.map CustomTypeConstructor
 
 
 customTypeConstructorList : Parser.Parser (List CustomTypeConstructor)
@@ -383,7 +401,7 @@ customTypeConstructorList =
             Parser.oneOf
                 [ Parser.succeed (\s -> Parser.Loop (s :: revList))
                     |. comments
-                    |= customTypeConstructor
+                    |= nestedTypeName
                     |. comments
                     |. Parser.oneOf [ Parser.symbol "|", Parser.succeed () ]
                 , Parser.succeed ()
@@ -401,9 +419,9 @@ customTypeConstructorList =
     orderCustomType =
         CustomType
             (TypeName "Order" [])
-            [ CustomTypeConstructor "LT"
-            , CustomTypeConstructor "EQ"
-            , CustomTypeConstructor "GT"
+            [ CustomTypeConstructor (TitleCaseDotPhrase "LT") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "EQ") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "GT") []
             ]
 
     Parser.run customType (String.trim ("""
@@ -421,8 +439,8 @@ customTypeConstructorList =
     maybeCustomType =
         CustomType
             (TypeName "Maybe" [ TypeParam "a" ])
-            [ CustomTypeConstructor "Nothing"
-            , CustomTypeConstructor "Just a"
+            [ CustomTypeConstructor (TitleCaseDotPhrase "Nothing") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "Just") [ ConstructorTypeParam "a" ]
             ]
 
     Parser.run customType (String.trim ("""
@@ -439,7 +457,10 @@ customTypeConstructorList =
     dictCustomType =
         CustomType
             (TypeName "Dict" [ TypeParam "a", TypeParam "b" ])
-            [ CustomTypeConstructor "Dict (Set (a, b))"
+            [ CustomTypeConstructor (TitleCaseDotPhrase "Dict")
+                [ CustomTypeConstructor (TitleCaseDotPhrase "Set")
+                    [ Tuple2 (ConstructorTypeParam "a") (ConstructorTypeParam "b") ]
+                ]
             ]
 
     Parser.run customType (String.trim ("""
@@ -575,7 +596,7 @@ aliasCustomType =
     --> Ok (AliasRecordType (TypeName "User" []) [(FieldPair (FieldName "userID") (TypeName "String" [])),FieldPair (FieldName "email") (TypeName "Email" [])])
 
     Parser.run typeAlias ("""type alias User = String""")
-    --> Ok (AliasCustomType (CustomType (TypeName "User" []) [CustomTypeConstructor "String"]))
+    --> Ok (AliasCustomType (CustomType (TypeName "User" []) [CustomTypeConstructor (TitleCaseDotPhrase "String") []]))
 
 -}
 typeAlias : Parser.Parser TypeAlias
@@ -609,17 +630,17 @@ nameFromElmType elmType =
     orderCustomType =
         CustomType
             (TypeName "Order" [])
-            [ CustomTypeConstructor "LT"
-            , CustomTypeConstructor "EQ"
-            , CustomTypeConstructor "GT"
+            [ CustomTypeConstructor (TitleCaseDotPhrase "LT") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "EQ") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "GT") []
             ]
 
     boolCustomType : CustomType
     boolCustomType =
         CustomType
             (TypeName "Bool" [])
-            [ CustomTypeConstructor "True"
-            , CustomTypeConstructor "False"
+            [ CustomTypeConstructor (TitleCaseDotPhrase "True") []
+            , CustomTypeConstructor (TitleCaseDotPhrase "False") []
             ]
 
     userTypeAlias : TypeAlias
@@ -629,6 +650,21 @@ nameFromElmType elmType =
             [ FieldPair (FieldName "userID") (TypeName "String" [])
             , FieldPair (FieldName "email") (TypeName "Email" [])
             ]
+
+    Parser.run elmTypeList (String.trim ("""
+        type Order
+            = LT
+            | EQ
+            | GT
+    """))
+    --> Ok [ ElmCustomType orderCustomType ]
+
+    Parser.run elmTypeList (String.trim ("""
+        type Bool
+            = True
+            | False
+    """))
+    --> Ok [ ElmCustomType boolCustomType]
 
     Parser.run elmTypeList (String.trim ("""
         type Order
@@ -698,8 +734,20 @@ qualifyName dict string =
 
 
 qualifyConstructor : Dict String String -> CustomTypeConstructor -> CustomTypeConstructor
-qualifyConstructor dict (CustomTypeConstructor name) =
-    CustomTypeConstructor (String.join " " (List.map (qualifyName dict) (String.words name)))
+qualifyConstructor dict ct =
+    case ct of
+        CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
+            CustomTypeConstructor (TitleCaseDotPhrase (qualifyName dict name))
+                (List.map (qualifyConstructor dict) tokens)
+
+        ConstructorTypeParam name ->
+            ConstructorTypeParam (qualifyName dict name)
+
+        Tuple2 token1 token2 ->
+            ct
+
+        Tuple3 token1 token2 token3 ->
+            ct
 
 
 qualifyFieldPair : Dict String String -> FieldPair -> FieldPair
@@ -736,13 +784,6 @@ qualifyType dict elmType =
             ElmTypeAlias (AliasCustomType (qualifyCustomType dict t))
 
 
-qualifyCustomTypeConstructor : Dict String String -> CustomTypeConstructor -> CustomTypeConstructor
-qualifyCustomTypeConstructor dict (CustomTypeConstructor s) =
-    Dict.get s dict
-        |> Maybe.withDefault s
-        |> CustomTypeConstructor
-
-
 parentModuleName : String -> String
 parentModuleName =
     String.split "." >> List.reverse >> List.drop 1 >> List.reverse >> String.join "."
@@ -764,7 +805,20 @@ addReferencedTypes modulePrefix elmType file =
             let
                 newImportResolver =
                     List.foldl
-                        (\(CustomTypeConstructor s) acc -> Dict.update s (prefixIfMissing s) acc)
+                        (\ct acc ->
+                            case ct of
+                                CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
+                                    Dict.update name (prefixIfMissing name) acc
+
+                                ConstructorTypeParam name ->
+                                    Dict.update name (prefixIfMissing name) acc
+
+                                Tuple2 token1 token2 ->
+                                    acc
+
+                                Tuple3 token1 token2 token3 ->
+                                    acc
+                        )
                         file.importResolver_
                         constructors
             in
