@@ -283,8 +283,7 @@ constructorTypeParam =
             )
 
     Parser.run nestedTypeName "Model -> Msg -> Model"
-    --> Err [{ col = 7, problem = Parser.Problem "empty", row = 1 }]
-    -- Ok (modelMsgModel)
+    --> Ok (modelMsgModel)
 
 -}
 nestedTypeName : Parser.Parser CustomTypeConstructor
@@ -292,6 +291,48 @@ nestedTypeName =
     Parser.succeed CustomTypeConstructor
         |= titleCaseDotPhrase
         |= mustSpaceOrNewline nonEmptyNestedTypeTokens []
+        |> Parser.map functionFromCustomTypeConstructor
+
+
+functionArrow =
+    ConstructorTypeParam "->"
+
+
+functionFromCustomTypeConstructor : CustomTypeConstructor -> CustomTypeConstructor
+functionFromCustomTypeConstructor ct =
+    let
+        toFunction name acc rest =
+            case rest of
+                (ConstructorTypeParam "->") :: (CustomTypeConstructor name2 list2) :: xs ->
+                    Function (CustomTypeConstructor name acc) (toFunction name2 list2 xs)
+
+                (ConstructorTypeParam "->") :: x :: [] ->
+                    Function (CustomTypeConstructor name acc) x
+
+                [ ConstructorTypeParam "->" ] ->
+                    CustomTypeConstructor name acc
+
+                x :: xs ->
+                    toFunction name (List.append acc [ x ]) xs
+
+                [] ->
+                    CustomTypeConstructor name acc
+    in
+    case ct of
+        CustomTypeConstructor name list ->
+            toFunction name [] list
+
+        ConstructorTypeParam _ ->
+            ct
+
+        Tuple2 ct1 ct2 ->
+            Tuple2 (functionFromCustomTypeConstructor ct1) (functionFromCustomTypeConstructor ct2)
+
+        Tuple3 ct1 ct2 ct3 ->
+            Tuple3 (functionFromCustomTypeConstructor ct1) (functionFromCustomTypeConstructor ct2) (functionFromCustomTypeConstructor ct3)
+
+        Function ct1 ct2 ->
+            Function (functionFromCustomTypeConstructor ct1) (functionFromCustomTypeConstructor ct2)
 
 
 {-| Refers to the whole or any of valid token `Result x (Maybe a)`
@@ -318,7 +359,9 @@ nonEmptyNestedTypeTokens =
     let
         nonEmptyNestedTypeTokensHelp revList =
             Parser.oneOf
-                [ Parser.succeed (\token -> Parser.Loop (token :: revList))
+                [ Parser.succeed (Parser.Loop (functionArrow :: revList))
+                    |. Parser.symbol "-> "
+                , Parser.succeed (\token -> Parser.Loop (token :: revList))
                     |= anyCustomTypeConstructor
                     |. Parser.oneOf [ Parser.symbol " ", Parser.symbol "\n", Parser.end ]
                 , Parser.succeed ()

@@ -81,9 +81,4 @@ type alias Lookup =
 
 type Msg
     = Noop
-      -- interrupting comment
-    | Changes
-
-
-
--- | Change (String -> Int -> String)
+    | Changes (String -> Int -> String)

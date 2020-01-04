@@ -236,36 +236,44 @@ encoderDefinitions file =
 
 encoderDefinition : ElmTypeDef -> String
 encoderDefinition elmTypeDef =
-    case elmTypeDef of
-        CustomTypeDef { name, constructors } ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "encode" name
-                , typeSignature = encoderTypeSignature elmTypeDef
-                , functionArgument = encoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+    let
+        code =
+            case elmTypeDef of
+                CustomTypeDef { name, constructors } ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "encode" name
+                        , typeSignature = encoderTypeSignature elmTypeDef
+                        , functionArgument = encoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
 
-        TypeAliasDef (AliasRecordType name fieldPairs) ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "encode" name
-                , typeSignature = encoderTypeSignature elmTypeDef
-                , functionArgument = encoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+                TypeAliasDef (AliasRecordType name fieldPairs) ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "encode" name
+                        , typeSignature = encoderTypeSignature elmTypeDef
+                        , functionArgument = encoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
 
-        TypeAliasDef (AliasCustomType name ct) ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "encode" name
-                , typeSignature = encoderTypeSignature elmTypeDef
-                , functionArgument = encoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+                TypeAliasDef (AliasCustomType name ct) ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "encode" name
+                        , typeSignature = encoderTypeSignature elmTypeDef
+                        , functionArgument = encoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (encoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
+    in
+    if containFunctionElmTypeDef elmTypeDef then
+        "{- functions cannot be encoded/decoded \n" ++ code ++ "\n-}"
+
+    else
+        code
 
 
 encoderTypeSignature : ElmTypeDef -> String
@@ -341,7 +349,7 @@ encoderPatternMatchesLHS varPrefix index constructor =
 
                 Function argType returnType ->
                     -- ABORT
-                    "encodeString \"functions cannot be encoded/decoded\""
+                    "<function>"
     in
     "(" ++ str ++ ")"
 
@@ -371,7 +379,7 @@ encoderPatternMatchesRHS varPrefix index constructor =
 
                 Function argType returnType ->
                     -- ABORT
-                    "encodeString \"functions cannot be encoded/decoded\""
+                    "<function>"
     in
     "(" ++ str ++ ")"
 
@@ -421,7 +429,7 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
 
                 Function argType returnType ->
                     -- ABORT
-                    "encodeString \"functions cannot be encoded/decoded\""
+                    "<function>"
     in
     "(" ++ str ++ ")"
 
@@ -476,36 +484,44 @@ decoderDefinitions file =
 
 decoderDefinition : ElmTypeDef -> String
 decoderDefinition elmTypeDef =
-    case elmTypeDef of
-        CustomTypeDef { name, constructors } ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "decode" name
-                , typeSignature = decoderTypeSignature elmTypeDef
-                , functionArgument = decoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+    let
+        code =
+            case elmTypeDef of
+                CustomTypeDef { name, constructors } ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "decode" name
+                        , typeSignature = decoderTypeSignature elmTypeDef
+                        , functionArgument = decoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
 
-        TypeAliasDef (AliasRecordType name fieldPairs) ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "decode" name
-                , typeSignature = decoderTypeSignature elmTypeDef
-                , functionArgument = decoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+                TypeAliasDef (AliasRecordType name fieldPairs) ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "decode" name
+                        , typeSignature = decoderTypeSignature elmTypeDef
+                        , functionArgument = decoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
 
-        TypeAliasDef (AliasCustomType name ct) ->
-            applyTemplate
-                { template = templateFunctionDefinition
-                , functionName = typeFunctionName "decode" name
-                , typeSignature = decoderTypeSignature elmTypeDef
-                , functionArgument = decoderFunctionArguments elmTypeDef
-                , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
-                , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
-                }
+                TypeAliasDef (AliasCustomType name ct) ->
+                    applyTemplate
+                        { template = templateFunctionDefinition
+                        , functionName = typeFunctionName "decode" name
+                        , typeSignature = decoderTypeSignature elmTypeDef
+                        , functionArgument = decoderFunctionArguments elmTypeDef
+                        , functionBody = "\n    " ++ String.join "\n    " (decoderBodyOf elmTypeDef)
+                        , debug = "{-| " ++ Debug.toString elmTypeDef ++ " -}\n"
+                        }
+    in
+    if containFunctionElmTypeDef elmTypeDef then
+        "{- functions cannot be encoded/decoded \n" ++ code ++ "\n-}"
+
+    else
+        code
 
 
 decoderTypeSignature : ElmTypeDef -> String
@@ -591,7 +607,7 @@ decoderPatternMatchesLHS constructor =
 
         Function argType returnType ->
             -- ABORT
-            "encodeString \"functions cannot be encoded/decoded\""
+            "<function>"
 
 
 decoderPatternMatchesRHS : CustomTypeConstructor -> String
@@ -615,7 +631,7 @@ decoderPatternMatchesRHS constructor =
 
                 Function argType returnType ->
                     -- ABORT
-                    "encodeString \"functions cannot be encoded/decoded\""
+                    "<function>"
     in
     "(" ++ str ++ ")"
 
@@ -656,7 +672,7 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
 
                 Function argType returnType ->
                     -- ABORT
-                    "encodeString \"functions cannot be encoded/decoded\""
+                    "<function>"
     in
     if pipelining then
         "(Json.Decode.Pipeline.custom (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ str ++ ")))"

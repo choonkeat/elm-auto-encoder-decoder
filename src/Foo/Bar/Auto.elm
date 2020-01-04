@@ -169,12 +169,14 @@ encodeLookup value =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") []], name = TypeName "Msg" [] } -}
+{- functions cannot be encoded/decoded 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") [Function (CustomTypeConstructor (TitleCaseDotPhrase "String") []) (Function (CustomTypeConstructor (TitleCaseDotPhrase "Int") []) (CustomTypeConstructor (TitleCaseDotPhrase "String") []))]], name = TypeName "Msg" [] } -}
 encodeMsg : Msg -> Json.Encode.Value
 encodeMsg value =
     case value of
         (Noop) -> (Json.Encode.list identity [ encodeString "Noop" ])
-        (Changes) -> (Json.Encode.list identity [ encodeString "Changes" ])
+        (Changes m0) -> (Json.Encode.list identity [ encodeString "Changes", (<function>) ])
+-}
 
 
 
@@ -234,7 +236,8 @@ decodeLookup  =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") []], name = TypeName "Msg" [] } -}
+{- functions cannot be encoded/decoded 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") [Function (CustomTypeConstructor (TitleCaseDotPhrase "String") []) (Function (CustomTypeConstructor (TitleCaseDotPhrase "Int") []) (CustomTypeConstructor (TitleCaseDotPhrase "String") []))]], name = TypeName "Msg" [] } -}
 decodeMsg : Json.Decode.Decoder (Msg)
 decodeMsg  =
     Json.Decode.index 0 Json.Decode.string
@@ -242,10 +245,11 @@ decodeMsg  =
             (\word ->
                 case word of
                     "Noop" -> (Json.Decode.succeed Noop)
-                    "Changes" -> (Json.Decode.succeed Changes)
+                    "Changes" -> (Json.Decode.succeed Changes |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (<function>))))
                     _ -> Json.Decode.fail ("Unexpected Msg: " ++ word)
             )
                  
+-}
 
 
 
