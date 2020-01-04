@@ -273,8 +273,18 @@ constructorTypeParam =
     Parser.run nestedTypeName "Dict x (Result x Int)"
     --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [ ConstructorTypeParam "x", resultXInt ])
 
+    modelMsgModel : CustomTypeConstructor
+    modelMsgModel =
+        Function
+            (CustomTypeConstructor (TitleCaseDotPhrase "Model") [])
+            (Function
+                (CustomTypeConstructor (TitleCaseDotPhrase "Msg") [])
+                (CustomTypeConstructor (TitleCaseDotPhrase "Model") [])
+            )
+
     Parser.run nestedTypeName "Model -> Msg -> Model"
-    --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [ ConstructorTypeParam "x", resultXInt ])
+    --> Err [{ col = 7, problem = Parser.Problem "empty", row = 1 }]
+    -- Ok (modelMsgModel)
 
 -}
 nestedTypeName : Parser.Parser CustomTypeConstructor
@@ -404,6 +414,7 @@ customTypeConstructorList =
         type Order
             = LT
             | EQ
+              -- interrupting comment
             | GT
     """))
     --> Ok orderCustomType
@@ -717,11 +728,14 @@ qualifyConstructor dict ct =
         ConstructorTypeParam name ->
             ConstructorTypeParam (qualifyName dict name)
 
-        Tuple2 token1 token2 ->
-            ct
+        Tuple2 type1 type2 ->
+            Tuple2 (qualifyConstructor dict type1) (qualifyConstructor dict type2)
 
-        Tuple3 token1 token2 token3 ->
-            ct
+        Tuple3 type1 type2 type3 ->
+            Tuple3 (qualifyConstructor dict type1) (qualifyConstructor dict type2) (qualifyConstructor dict type3)
+
+        Function argType returnType ->
+            Function (qualifyConstructor dict argType) (qualifyConstructor dict returnType)
 
 
 qualifyFieldPair : Dict String String -> FieldPair -> FieldPair
@@ -764,36 +778,51 @@ parentModuleName =
     String.split "." >> List.reverse >> List.drop 1 >> List.reverse >> String.join "."
 
 
+prefixIfMissing : Set String -> String -> String -> Maybe String -> Maybe String
+prefixIfMissing fileImports modulePrefix phrase maybeExist =
+    case ( maybeExist, Set.member (parentModuleName phrase) fileImports ) of
+        ( Nothing, False ) ->
+            Just (modulePrefix ++ phrase)
+
+        _ ->
+            maybeExist
+
+
+addReferencedCustomTypeConstructor : Set String -> String -> CustomTypeConstructor -> Dict String String -> Dict String String
+addReferencedCustomTypeConstructor fileImports modulePrefix ct acc =
+    case ct of
+        CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
+            acc
+                |> Dict.update name (prefixIfMissing fileImports modulePrefix name)
+
+        ConstructorTypeParam name ->
+            acc
+                |> Dict.update name (prefixIfMissing fileImports modulePrefix name)
+
+        Tuple2 type1 type2 ->
+            acc
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix type1
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix type2
+
+        Tuple3 type1 type2 type3 ->
+            acc
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix type1
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix type2
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix type3
+
+        Function argType returnType ->
+            acc
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix argType
+                |> addReferencedCustomTypeConstructor fileImports modulePrefix returnType
+
+
 addReferencedTypes : String -> ElmTypeDef -> ElmFile -> ElmFile
 addReferencedTypes modulePrefix elmTypeDef file =
-    let
-        prefixIfMissing phrase maybeExist =
-            case ( maybeExist, Set.member (parentModuleName phrase) file.imports ) of
-                ( Nothing, False ) ->
-                    Just (modulePrefix ++ phrase)
-
-                _ ->
-                    maybeExist
-    in
     case elmTypeDef of
         CustomTypeDef { constructors } ->
             let
                 newImportResolver =
-                    List.foldl
-                        (\ct acc ->
-                            case ct of
-                                CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
-                                    Dict.update name (prefixIfMissing name) acc
-
-                                ConstructorTypeParam name ->
-                                    Dict.update name (prefixIfMissing name) acc
-
-                                Tuple2 token1 token2 ->
-                                    acc
-
-                                Tuple3 token1 token2 token3 ->
-                                    acc
-                        )
+                    List.foldl (addReferencedCustomTypeConstructor file.imports modulePrefix)
                         file.importResolver_
                         constructors
             in
@@ -806,10 +835,10 @@ addReferencedTypes modulePrefix elmTypeDef file =
                         (\currentFieldPair acc ->
                             case currentFieldPair of
                                 CustomField (FieldName fname) ct ->
-                                    Dict.update fname (prefixIfMissing fname) acc
+                                    Dict.update fname (prefixIfMissing file.imports modulePrefix fname) acc
 
                                 NestedField (FieldName fname) list ->
-                                    Dict.update fname (prefixIfMissing fname) acc
+                                    Dict.update fname (prefixIfMissing file.imports modulePrefix fname) acc
                         )
                         file.importResolver_
                         fieldPairs
@@ -1012,6 +1041,58 @@ isTypeParameter phrase =
             False
 
 
-isFunction : String -> Bool
-isFunction =
-    String.contains "->"
+containFunctionElmTypeDef : ElmTypeDef -> Bool
+containFunctionElmTypeDef elmTypeDef =
+    case elmTypeDef of
+        CustomTypeDef ct ->
+            containFunctionCustomType ct
+
+        TypeAliasDef ta ->
+            containFunctionTypeAlias ta
+
+
+containFunctionTypeAlias : TypeAlias -> Bool
+containFunctionTypeAlias ta =
+    case ta of
+        AliasRecordType _ list ->
+            List.any containFunctionFieldPair list
+
+        AliasCustomType _ ct ->
+            containFunctionCustomTypeConstructor ct
+
+
+containFunctionCustomType : CustomType -> Bool
+containFunctionCustomType { constructors } =
+    List.any containFunctionCustomTypeConstructor constructors
+
+
+containFunctionFieldPair : FieldPair -> Bool
+containFunctionFieldPair pair =
+    case pair of
+        CustomField _ ct ->
+            containFunctionCustomTypeConstructor ct
+
+        NestedField _ list ->
+            List.any containFunctionFieldPair list
+
+
+containFunctionCustomTypeConstructor : CustomTypeConstructor -> Bool
+containFunctionCustomTypeConstructor ct =
+    case ct of
+        CustomTypeConstructor _ list ->
+            List.any containFunctionCustomTypeConstructor list
+
+        ConstructorTypeParam s ->
+            False
+
+        Tuple2 t1 t2 ->
+            containFunctionCustomTypeConstructor t1
+                || containFunctionCustomTypeConstructor t2
+
+        Tuple3 t1 t2 t3 ->
+            containFunctionCustomTypeConstructor t1
+                || containFunctionCustomTypeConstructor t2
+                || containFunctionCustomTypeConstructor t3
+
+        Function argType returnType ->
+            True

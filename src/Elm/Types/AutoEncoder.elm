@@ -169,6 +169,9 @@ constructorFunctionName funcPrefix ct =
                         ++ constructorFunctionName funcPrefix ct1
                         ++ ", "
                         ++ constructorFunctionName funcPrefix ct2
+
+                Function argType returnType ->
+                    constructorFunctionName funcPrefix argType ++ constructorFunctionName "" returnType
     in
     "(" ++ str ++ ")"
 
@@ -335,6 +338,10 @@ encoderPatternMatchesLHS varPrefix index constructor =
 
                 Tuple3 ct0 ct1 ct2 ->
                     varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2"
+
+                Function argType returnType ->
+                    -- ABORT
+                    "encodeString \"functions cannot be encoded/decoded\""
     in
     "(" ++ str ++ ")"
 
@@ -361,6 +368,10 @@ encoderPatternMatchesRHS varPrefix index constructor =
 
                 Tuple3 ct0 ct1 ct2 ->
                     "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2)"
+
+                Function argType returnType ->
+                    -- ABORT
+                    "encodeString \"functions cannot be encoded/decoded\""
     in
     "(" ++ str ++ ")"
 
@@ -407,6 +418,10 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
                         ++ encoderSourceFromCustomTypeConstructor varPrefix 1 ct1
                         ++ ", "
                         ++ encoderSourceFromCustomTypeConstructor varPrefix 2 ct2
+
+                Function argType returnType ->
+                    -- ABORT
+                    "encodeString \"functions cannot be encoded/decoded\""
     in
     "(" ++ str ++ ")"
 
@@ -574,6 +589,10 @@ decoderPatternMatchesLHS constructor =
         Tuple3 ct0 ct1 ct2 ->
             """-- varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2" """
 
+        Function argType returnType ->
+            -- ABORT
+            "encodeString \"functions cannot be encoded/decoded\""
+
 
 decoderPatternMatchesRHS : CustomTypeConstructor -> String
 decoderPatternMatchesRHS constructor =
@@ -593,6 +612,10 @@ decoderPatternMatchesRHS constructor =
 
                 Tuple3 ct0 ct1 ct2 ->
                     "(" ++ decoderPatternMatchesRHS ct0 ++ ", " ++ decoderPatternMatchesRHS ct1 ++ ", " ++ decoderPatternMatchesRHS ct2 ++ ")"
+
+                Function argType returnType ->
+                    -- ABORT
+                    "encodeString \"functions cannot be encoded/decoded\""
     in
     "(" ++ str ++ ")"
 
@@ -630,6 +653,10 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
                         ++ decoderSourceFromCustomTypeConstructor pipelining 1 ct1
                         ++ ", "
                         ++ decoderSourceFromCustomTypeConstructor pipelining 2 ct2
+
+                Function argType returnType ->
+                    -- ABORT
+                    "encodeString \"functions cannot be encoded/decoded\""
     in
     if pipelining then
         "(Json.Decode.Pipeline.custom (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ str ++ ")))"

@@ -104,8 +104,15 @@ stdlib =
     let
         data =
             """
-            type Maybe a = Nothing | Just a
-            type Result x a = Err x | Ok a
+
+type Maybe a
+    = Nothing
+    | Just a
+
+type Result x a
+    = Err x
+    | Ok a
+
             """
     in
     case Parser.run Elm.Types.Parser.fileContent data of

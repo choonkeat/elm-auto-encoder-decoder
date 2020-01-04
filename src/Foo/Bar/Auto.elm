@@ -9,6 +9,7 @@ import Dict
 import Json.Decode
 import Json.Decode.Pipeline
 import Json.Encode
+import Main
 import Set
 
 
@@ -168,6 +169,15 @@ encodeLookup value =
 
 
 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") []], name = TypeName "Msg" [] } -}
+encodeMsg : Msg -> Json.Encode.Value
+encodeMsg value =
+    case value of
+        (Noop) -> (Json.Encode.list identity [ encodeString "Noop" ])
+        (Changes) -> (Json.Encode.list identity [ encodeString "Changes" ])
+
+
+
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "None") [],CustomTypeConstructor (TitleCaseDotPhrase "Some") [ConstructorTypeParam "a"]], name = TypeName "Option" ["a"] } -}
 encodeOption : (a -> Json.Encode.Value) -> Option a -> Json.Encode.Value
 encodeOption funcArga value =
@@ -221,6 +231,21 @@ decodeHello funcArgx =
 decodeLookup : Json.Decode.Decoder (Lookup)
 decodeLookup  =
     (decodeDict (decodeString) (decodeInt))
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Noop") [],CustomTypeConstructor (TitleCaseDotPhrase "Changes") []], name = TypeName "Msg" [] } -}
+decodeMsg : Json.Decode.Decoder (Msg)
+decodeMsg  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Noop" -> (Json.Decode.succeed Noop)
+                    "Changes" -> (Json.Decode.succeed Changes)
+                    _ -> Json.Decode.fail ("Unexpected Msg: " ++ word)
+            )
+                 
 
 
 

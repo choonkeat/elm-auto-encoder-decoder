@@ -45,6 +45,7 @@ module Foo.Bar exposing (..)
 -}
 
 import Dict exposing (Dict)
+import Main exposing (Msg)
 
 
 type Option a
@@ -76,3 +77,13 @@ type alias Payload =
 
 type alias Lookup =
     Dict String Int
+
+
+type Msg
+    = Noop
+      -- interrupting comment
+    | Changes
+
+
+
+-- | Change (String -> Int -> String)

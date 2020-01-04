@@ -96,3 +96,4 @@ type CustomTypeConstructor
     | ConstructorTypeParam String
     | Tuple2 CustomTypeConstructor CustomTypeConstructor
     | Tuple3 CustomTypeConstructor CustomTypeConstructor CustomTypeConstructor
+    | Function CustomTypeConstructor CustomTypeConstructor
