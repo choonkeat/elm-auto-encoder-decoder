@@ -273,13 +273,15 @@ constructorTypeParam =
     Parser.run nestedTypeName "Dict x (Result x Int)"
     --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [ ConstructorTypeParam "x", resultXInt ])
 
+    Parser.run nestedTypeName "Model -> Msg -> Model"
+    --> Ok (CustomTypeConstructor (TitleCaseDotPhrase "Dict") [ ConstructorTypeParam "x", resultXInt ])
+
 -}
 nestedTypeName : Parser.Parser CustomTypeConstructor
 nestedTypeName =
     Parser.succeed CustomTypeConstructor
         |= titleCaseDotPhrase
-        |. Parser.oneOf [ Parser.symbol " ", Parser.succeed () ]
-        |= nestedTypeTokens
+        |= mustSpaceOrNewline nonEmptyNestedTypeTokens []
 
 
 {-| Refers to the whole or any of valid token `Result x (Maybe a)`
@@ -301,19 +303,20 @@ anyCustomTypeConstructor =
         ]
 
 
-nestedTypeTokens : Parser.Parser (List CustomTypeConstructor)
-nestedTypeTokens =
+nonEmptyNestedTypeTokens : Parser.Parser (List CustomTypeConstructor)
+nonEmptyNestedTypeTokens =
     let
-        nestedTypeTokensHelp revList =
+        nonEmptyNestedTypeTokensHelp revList =
             Parser.oneOf
                 [ Parser.succeed (\token -> Parser.Loop (token :: revList))
                     |= anyCustomTypeConstructor
-                    |. Parser.oneOf [ Parser.symbol " ", Parser.succeed () ]
+                    |. Parser.oneOf [ Parser.symbol " ", Parser.symbol "\n", Parser.end ]
                 , Parser.succeed ()
                     |> Parser.map (\_ -> Parser.Done (List.reverse revList))
                 ]
     in
-    Parser.loop [] nestedTypeTokensHelp
+    Parser.loop [] nonEmptyNestedTypeTokensHelp
+        |> Parser.andThen problemIfEmpty
 
 
 {-| Refers to `a, b` of `Coordinate (a, b)`
@@ -962,6 +965,20 @@ comments =
                 , Parser.multiComment "{-" "-}" Parser.Nestable
                 , Parser.spaces
                 ]
+
+
+mustSpaceOrNewline : Parser.Parser a -> a -> Parser.Parser a
+mustSpaceOrNewline parserAfterSpace defaultValue =
+    Parser.oneOf
+        [ Parser.succeed identity
+            |. Parser.symbol " "
+            |= parserAfterSpace
+        , Parser.succeed defaultValue
+            |. Parser.oneOf
+                [ Parser.chompIf (\c -> c == '\n' || c == '\u{000D}')
+                , Parser.end
+                ]
+        ]
 
 
 
