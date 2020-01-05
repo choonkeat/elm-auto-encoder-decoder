@@ -48,13 +48,13 @@ encodeList =
     Json.Encode.list
 
 
-encodeSet : (comparable -> Json.Encode.Value) -> Set.Set comparable -> Json.Encode.Value
-encodeSet encoder =
+encodeSetSet : (comparable -> Json.Encode.Value) -> Set.Set comparable -> Json.Encode.Value
+encodeSetSet encoder =
     Set.toList >> encodeList encoder
 
 
-encodeDict : (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> Dict.Dict a b -> Json.Encode.Value
-encodeDict keyEncoder =
+encodeDictDict : (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> Dict.Dict a b -> Json.Encode.Value
+encodeDictDict keyEncoder =
     Json.Encode.dict (\\k -> Json.Encode.encode 0 (keyEncoder k))
 
 
@@ -85,13 +85,13 @@ decodeList =
     Json.Decode.list
 
 
-decodeSet : (Json.Decode.Decoder comparable) -> Json.Decode.Decoder (Set.Set comparable)
-decodeSet =
+decodeSetSet : (Json.Decode.Decoder comparable) -> Json.Decode.Decoder (Set.Set comparable)
+decodeSetSet =
     Json.Decode.list >> Json.Decode.map Set.fromList
 
 
-decodeDict : (Json.Decode.Decoder comparable) -> (Json.Decode.Decoder b) -> Json.Decode.Decoder (Dict.Dict comparable b)
-decodeDict keyDecoder valueDecoder =
+decodeDictDict : (Json.Decode.Decoder comparable) -> (Json.Decode.Decoder b) -> Json.Decode.Decoder (Dict.Dict comparable b)
+decodeDictDict keyDecoder valueDecoder =
     Json.Decode.dict valueDecoder
         |> Json.Decode.map (\\dict ->
             Dict.foldl (\\string v acc ->
@@ -137,7 +137,7 @@ applyTemplate { debug, template, functionName, typeSignature, functionArgument, 
 
 typeFunctionName : String -> TypeName -> String
 typeFunctionName funcPrefix (TypeName s list) =
-    funcPrefix ++ s ++ String.join "" (List.filter (not << isTypeParameter) list)
+    funcPrefix ++ sanitizeTitleCaseDotPhrase s ++ String.join "" (List.filter (not << isTypeParameter) list)
 
 
 sourceFromTypeName : TypeName -> String
@@ -151,7 +151,7 @@ constructorFunctionName funcPrefix ct =
         str =
             case ct of
                 CustomTypeConstructor (TitleCaseDotPhrase s) ctList ->
-                    (funcPrefix ++ s)
+                    (funcPrefix ++ sanitizeTitleCaseDotPhrase s)
                         :: List.map (constructorFunctionName funcPrefix) ctList
                         |> String.join " "
 
@@ -200,7 +200,7 @@ produceSourceCode prelude file =
         sourceHeader =
             templateHeader
                 |> String.replace "{parentModuleName}" parentModuleName
-                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports file.importResolver_)
+                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports file.importResolver)
                 |> String.replace "{prelude}" prelude
     in
     sourceHeader
@@ -212,6 +212,7 @@ produceSourceCode prelude file =
 
 sourceFromImports : String -> Set String -> Dict String String -> String
 sourceFromImports modulePrefix modules dict =
+    -- |> (\s -> s ++ "\n\n\n{- importResolver: " ++ Json.Encode.encode 2 (Json.Encode.dict identity Json.Encode.string dict) ++ " -}")
     Set.fromList (Dict.values dict)
         |> Set.map (String.split ".")
         |> Set.map (\list -> String.join "." (List.take (List.length list - 1) list))
@@ -270,7 +271,7 @@ encoderDefinition elmTypeDef =
                         }
     in
     if containFunctionElmTypeDef elmTypeDef then
-        "{- functions cannot be encoded/decoded \n" ++ code ++ "\n-}"
+        "{- functions cannot be encoded/decoded into json\n" ++ code ++ "\n-}"
 
     else
         code
@@ -400,12 +401,12 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
                             List.indexedMap (encoderSourceFromCustomTypeConstructor "") list
                     in
                     if varPrefix == "" then
-                        ("encode" ++ s)
+                        ("encode" ++ sanitizeTitleCaseDotPhrase s)
                             :: encodeParams
                             |> String.join " "
 
                     else
-                        (("encode" ++ s) :: List.append encodeParams [ varPrefix ++ String.fromInt i ])
+                        (("encode" ++ sanitizeTitleCaseDotPhrase s) :: List.append encodeParams [ varPrefix ++ String.fromInt i ])
                             |> String.join " "
 
                 ConstructorTypeParam s ->
@@ -518,7 +519,7 @@ decoderDefinition elmTypeDef =
                         }
     in
     if containFunctionElmTypeDef elmTypeDef then
-        "{- functions cannot be encoded/decoded \n" ++ code ++ "\n-}"
+        "{- functions cannot be encoded/decoded into json\n" ++ code ++ "\n-}"
 
     else
         code
@@ -651,7 +652,7 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
                         decodeParams =
                             List.indexedMap (decoderSourceFromCustomTypeConstructor False) list
                     in
-                    ("decode" ++ s)
+                    ("decode" ++ sanitizeTitleCaseDotPhrase s)
                         :: decodeParams
                         |> String.join " "
 
@@ -713,3 +714,8 @@ decoderBodyOfFieldPair index fieldPair =
                 ++ String.join " |> " (decoderBodyOfFieldPairList "" fieldPairList)
                 ++ ")"
                 ++ ")"
+
+
+sanitizeTitleCaseDotPhrase : String -> String
+sanitizeTitleCaseDotPhrase =
+    String.replace "." ""

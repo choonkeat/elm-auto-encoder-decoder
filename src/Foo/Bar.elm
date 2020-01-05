@@ -10,36 +10,36 @@ module Foo.Bar exposing (..)
     optionValue =
         None
 
-    encodeOption Json.Encode.int optionValue
+    encodeFooBarOption Json.Encode.int optionValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString (decodeOption Json.Decode.int)
+        |> Json.Decode.decodeString (decodeFooBarOption Json.Decode.int)
     --> Ok optionValue
 
     helloValue : Hello Int
     helloValue =
         Good "Morning" (Ok (Just "5.45"))
 
-    encodeHello Json.Encode.int helloValue
+    encodeFooBarHello Json.Encode.int helloValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString (decodeHello Json.Decode.int)
+        |> Json.Decode.decodeString (decodeFooBarHello Json.Decode.int)
     --> Ok helloValue
 
     personValue : Person
     personValue =
         { name = "Foo", age = 42 }
 
-    encodePerson personValue
+    encodeFooBarPerson personValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString decodePerson
+        |> Json.Decode.decodeString decodeFooBarPerson
     --> Ok personValue
 
     payloadValue : Payload
     payloadValue =
         { title = "Hello", author = { name = "Foo", age = 42 } }
 
-    encodePayload payloadValue
+    encodeFooBarPayload payloadValue
         |> Json.Encode.encode 0
-        |> Json.Decode.decodeString decodePayload
+        |> Json.Decode.decodeString decodeFooBarPayload
     --> Ok payloadValue
 
 -}

@@ -756,66 +756,6 @@ problemIfEmpty list =
             Parser.succeed list
 
 
-qualifyName : Dict String String -> String -> String
-qualifyName dict string =
-    Maybe.withDefault string (Dict.get string dict)
-
-
-qualifyConstructor : Dict String String -> CustomTypeConstructor -> CustomTypeConstructor
-qualifyConstructor dict ct =
-    case ct of
-        CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
-            CustomTypeConstructor (TitleCaseDotPhrase (qualifyName dict name))
-                (List.map (qualifyConstructor dict) tokens)
-
-        ConstructorTypeParam name ->
-            ConstructorTypeParam (qualifyName dict name)
-
-        Tuple2 type1 type2 ->
-            Tuple2 (qualifyConstructor dict type1) (qualifyConstructor dict type2)
-
-        Tuple3 type1 type2 type3 ->
-            Tuple3 (qualifyConstructor dict type1) (qualifyConstructor dict type2) (qualifyConstructor dict type3)
-
-        Function argType returnType ->
-            Function (qualifyConstructor dict argType) (qualifyConstructor dict returnType)
-
-
-qualifyFieldPair : Dict String String -> FieldPair -> FieldPair
-qualifyFieldPair dict fieldpair =
-    case fieldpair of
-        CustomField (FieldName fname) ct ->
-            CustomField (FieldName (qualifyName dict fname)) (qualifyConstructor dict ct)
-
-        NestedField (FieldName fname) list ->
-            NestedField (FieldName (qualifyName dict fname)) (List.map (qualifyFieldPair dict) list)
-
-
-qualifyCustomType : Dict String String -> CustomType -> CustomType
-qualifyCustomType dict { name, constructors } =
-    let
-        (TypeName tname typeParams) =
-            name
-
-        newConstructors =
-            List.map (qualifyConstructor dict) constructors
-    in
-    { name = TypeName (qualifyName dict tname) typeParams, constructors = newConstructors }
-
-
-qualifyType : Dict String String -> ElmTypeDef -> ElmTypeDef
-qualifyType dict elmTypeDef =
-    case elmTypeDef of
-        CustomTypeDef t ->
-            CustomTypeDef (qualifyCustomType dict t)
-
-        TypeAliasDef (AliasRecordType (TypeName tname typeParams) fieldPairs) ->
-            TypeAliasDef (AliasRecordType (TypeName (qualifyName dict tname) typeParams) (List.map (qualifyFieldPair dict) fieldPairs))
-
-        TypeAliasDef (AliasCustomType (TypeName tname typeParams) ct) ->
-            TypeAliasDef (AliasCustomType (TypeName (qualifyName dict tname) typeParams) (qualifyConstructor dict ct))
-
-
 parentModuleName : String -> String
 parentModuleName =
     String.split "." >> List.reverse >> List.drop 1 >> List.reverse >> String.join "."
@@ -829,6 +769,16 @@ prefixIfMissing fileImports modulePrefix phrase maybeExist =
 
         _ ->
             maybeExist
+
+
+addReferencedTypesFieldPair : Set String -> String -> FieldPair -> Dict String String -> Dict String String
+addReferencedTypesFieldPair fileImports modulePrefix pair dict =
+    case pair of
+        CustomField _ ct ->
+            addReferencedCustomTypeConstructor fileImports modulePrefix ct dict
+
+        NestedField _ list ->
+            List.foldl (addReferencedTypesFieldPair fileImports modulePrefix) dict list
 
 
 addReferencedCustomTypeConstructor : Set String -> String -> CustomTypeConstructor -> Dict String String -> Dict String String
@@ -866,27 +816,19 @@ addReferencedTypes modulePrefix elmTypeDef file =
             let
                 newImportResolver =
                     List.foldl (addReferencedCustomTypeConstructor file.imports modulePrefix)
-                        file.importResolver_
+                        file.importResolver
                         constructors
             in
-            { file | importResolver_ = newImportResolver }
+            { file | importResolver = newImportResolver }
 
         TypeAliasDef (AliasRecordType _ fieldPairs) ->
             let
                 newImportResolver =
-                    List.foldl
-                        (\currentFieldPair acc ->
-                            case currentFieldPair of
-                                CustomField (FieldName fname) ct ->
-                                    Dict.update fname (prefixIfMissing file.imports modulePrefix fname) acc
-
-                                NestedField (FieldName fname) list ->
-                                    Dict.update fname (prefixIfMissing file.imports modulePrefix fname) acc
-                        )
-                        file.importResolver_
+                    List.foldl (addReferencedTypesFieldPair file.imports modulePrefix)
+                        file.importResolver
                         fieldPairs
             in
-            { file | importResolver_ = newImportResolver }
+            { file | importResolver = newImportResolver }
 
         TypeAliasDef (AliasCustomType tname ct) ->
             addReferencedTypes modulePrefix (CustomTypeDef { name = tname, constructors = [ ct ] }) file
@@ -905,7 +847,7 @@ addElmTypeDef elmTypeDef file =
             addReferencedTypes
                 file.modulePrefix
                 elmTypeDef
-                { file | importResolver_ = Dict.insert shortName absoluteName file.importResolver_ }
+                { file | importResolver = Dict.insert shortName absoluteName file.importResolver }
     in
     if Set.member shortName file.skipTypes then
         file
@@ -937,7 +879,7 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
     let
         newImportResolver =
             -- Dict.insert name name
-            file.importResolver_
+            file.importResolver
 
         importResolverWithMaybeAliasName =
             Maybe.map (\aliasName -> Dict.insert aliasName name newImportResolver) maybeAliasName
@@ -945,10 +887,10 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
     in
     case exposing_ of
         ExposingEverything ->
-            { file | imports = Set.insert name file.imports, importResolver_ = importResolverWithMaybeAliasName }
+            { file | imports = Set.insert name file.imports, importResolver = importResolverWithMaybeAliasName }
 
         ExposingOnly [] ->
-            { file | imports = Set.insert name file.imports, importResolver_ = importResolverWithMaybeAliasName }
+            { file | imports = Set.insert name file.imports, importResolver = importResolverWithMaybeAliasName }
 
         ExposingOnly (x :: xs) ->
             let
@@ -961,7 +903,7 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
                         name ++ "." ++ x
 
                 newFile =
-                    { file | importResolver_ = Dict.insert x namespaced newImportResolver }
+                    { file | importResolver = Dict.insert x namespaced newImportResolver }
             in
             addImportDef newFile (ImportDef (TitleCaseDotPhrase name) maybeAliasName (ExposingOnly xs))
 
@@ -981,7 +923,7 @@ fileContent =
                 , Parser.succeed (addImportDef currentFile >> Parser.Loop)
                     |= importDefinition
                     |. comments
-                , Parser.succeed (Parser.Done currentFile)
+                , Parser.succeed (Parser.Done { currentFile | knownTypes = qualifyKnownTypes currentFile.importResolver currentFile.knownTypes })
                     |. Parser.end
                 , Parser.succeed (Parser.Loop currentFile)
                     |. Parser.chompUntilEndOr "\n"
@@ -991,9 +933,10 @@ fileContent =
     Parser.loop
         { modulePrefix = ""
         , imports = Set.empty
-        , importResolver_ =
+        , importResolver =
             Dict.fromList
-                [ ( "String", "String" )
+                [ -- (givenString, qualifiedString)
+                  ( "String", "String" )
                 , ( "String.String", "String" )
                 , ( "Set", "Set.Set" )
                 , ( "Dict", "Dict.Dict" )
@@ -1139,3 +1082,72 @@ containFunctionCustomTypeConstructor ct =
 
         Function argType returnType ->
             True
+
+
+
+-- FULLY QUALIFIED WITH MODULE NAME
+
+
+qualifyName : Dict String String -> String -> String
+qualifyName dict string =
+    Maybe.withDefault string (Dict.get string dict)
+
+
+qualifyConstructor : Dict String String -> CustomTypeConstructor -> CustomTypeConstructor
+qualifyConstructor dict ct =
+    case ct of
+        CustomTypeConstructor (TitleCaseDotPhrase name) tokens ->
+            CustomTypeConstructor (TitleCaseDotPhrase (qualifyName dict name))
+                (List.map (qualifyConstructor dict) tokens)
+
+        ConstructorTypeParam name ->
+            ConstructorTypeParam (qualifyName dict name)
+
+        Tuple2 type1 type2 ->
+            Tuple2 (qualifyConstructor dict type1) (qualifyConstructor dict type2)
+
+        Tuple3 type1 type2 type3 ->
+            Tuple3 (qualifyConstructor dict type1) (qualifyConstructor dict type2) (qualifyConstructor dict type3)
+
+        Function argType returnType ->
+            Function (qualifyConstructor dict argType) (qualifyConstructor dict returnType)
+
+
+qualifyFieldPair : Dict String String -> FieldPair -> FieldPair
+qualifyFieldPair dict fieldpair =
+    case fieldpair of
+        CustomField fname ct ->
+            CustomField fname (qualifyConstructor dict ct)
+
+        NestedField fname list ->
+            NestedField fname (List.map (qualifyFieldPair dict) list)
+
+
+qualifyCustomType : Dict String String -> CustomType -> CustomType
+qualifyCustomType dict { name, constructors } =
+    let
+        (TypeName tname typeParams) =
+            name
+
+        newConstructors =
+            List.map (qualifyConstructor dict) constructors
+    in
+    { name = TypeName (qualifyName dict tname) typeParams, constructors = newConstructors }
+
+
+qualifyElmTypeDef : Dict String String -> ElmTypeDef -> ElmTypeDef
+qualifyElmTypeDef dict elmTypeDef =
+    case elmTypeDef of
+        CustomTypeDef t ->
+            CustomTypeDef (qualifyCustomType dict t)
+
+        TypeAliasDef (AliasRecordType (TypeName tname typeParams) fieldPairs) ->
+            TypeAliasDef (AliasRecordType (TypeName (qualifyName dict tname) typeParams) (List.map (qualifyFieldPair dict) fieldPairs))
+
+        TypeAliasDef (AliasCustomType (TypeName tname typeParams) ct) ->
+            TypeAliasDef (AliasCustomType (TypeName (qualifyName dict tname) typeParams) (qualifyConstructor dict ct))
+
+
+qualifyKnownTypes : Dict String String -> Dict String ElmTypeDef -> Dict String ElmTypeDef
+qualifyKnownTypes dict knownTypes =
+    Dict.map (\k v -> qualifyElmTypeDef dict v) knownTypes
