@@ -852,7 +852,8 @@ generateHttpClientAPIFor modulePrefix elmTypeDef =
     case elmTypeDef of
         TypeAliasDef (AliasRecordType (TypeName tname params) fields) ->
             if tname == modulePrefix ++ "API" then
-                [ httpClientAPIFor modulePrefix (TypeName tname params) fields
+                [ serverMsgType (TypeName tname params) fields
+                , httpClientAPIFor modulePrefix (TypeName tname params) fields
                 , httpServerAPIFor modulePrefix (TypeName tname params) fields
                 ]
 
@@ -936,6 +937,36 @@ httpClientTaskFunc modulePrefix pair =
 
         _ ->
             "-- does not support " ++ Debug.toString pair
+
+
+
+-- ServerMsg
+
+
+serverMsgFieldPair : FieldPair -> List CustomTypeConstructor
+serverMsgFieldPair pair =
+    case pair of
+        CustomField (FieldName fname) (Function input output) ->
+            [ CustomTypeConstructor (TitleCaseDotPhrase ("On" ++ fname)) [ output ] ]
+
+        _ ->
+            []
+
+
+serverMsgType : TypeName -> List FieldPair -> String
+serverMsgType (TypeName tname params) fields =
+    let
+        typealiasName =
+            "APIServerMsg"
+                :: params
+                |> String.join " "
+
+        constructors =
+            List.foldl (\pair acc -> List.append (serverMsgFieldPair pair) acc) [] fields
+                |> List.map sourceFromCustomTypeConstructor
+                |> List.map (String.dropLeft 1 >> String.dropRight 1)
+    in
+    "type " ++ typealiasName ++ "\n    = " ++ String.join "\n    | " constructors
 
 
 httpServerAPIFor : String -> TypeName -> List FieldPair -> String

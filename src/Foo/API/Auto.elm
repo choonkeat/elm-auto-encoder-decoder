@@ -380,6 +380,14 @@ decodeFooAPIUpdateThingInput  =
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "name" ] (decodeString))
 
 
+type APIServerMsg x
+    = OndeleteThing (Result x (()))
+    | OnupdateThing (Result x (Foo.API.Thing))
+    | OncreateThing (Result x (Foo.API.Thing))
+    | Onthing (Result x (Foo.API.Thing))
+    | OnlistThings (Result x (List (Foo.API.Thing)))
+
+
 type alias HttpClientAPI x =
     { listThings : ((Foo.API.ListThingInput) -> (Task (Http.Error) (Result x (List (Foo.API.Thing)))))
     , thing : ((Foo.API.ShowThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
