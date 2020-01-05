@@ -3,9 +3,12 @@ module Elm.Types.AutoEncoder exposing (decoderDefinitions, encoderDefinitions, p
 import Dict exposing (Dict)
 import Elm.Types exposing (..)
 import Elm.Types.Parser exposing (..)
+import Html exposing (ol)
+import Http
 import Json.Decode
 import Json.Encode
 import Parser
+import Platform exposing (Task)
 import Set exposing (Set)
 
 
@@ -18,6 +21,14 @@ templateHeader =
 
 import {parentModuleName} exposing (..)
 {imports}
+
+
+-- API IMPORTS
+
+
+import Platform exposing (Task)
+import Http
+
 
 
 -- HARDCODE
@@ -121,6 +132,28 @@ decode_Unit  =
             )
 
 
+httpJsonBodyResolver : Json.Decode.Decoder a -> Http.Response String -> Result Http.Error a
+httpJsonBodyResolver decoder resp =
+    case resp of
+        Http.GoodStatus_ m s ->
+            Json.Decode.decodeString decoder s
+                |> Result.mapError (Json.Decode.errorToString >> Http.BadBody)
+
+        Http.BadUrl_ s ->
+            Err (Http.BadUrl s)
+
+        Http.Timeout_ ->
+            Err Http.Timeout
+
+        Http.NetworkError_ ->
+            Err Http.NetworkError
+
+        Http.BadStatus_ m s ->
+            Json.Decode.decodeString decoder s
+                -- just trying; if our decoder understands the response body, great
+                |> Result.mapError (\\_ -> Http.BadStatus m.statusCode)
+
+
 -- PRELUDE
 
 
@@ -222,10 +255,12 @@ produceSourceCode prelude file =
                 |> String.replace "{prelude}" prelude
     in
     sourceHeader
-        ++ "\n\n"
+        ++ "\n\n\n"
         ++ encoderDefinitions file
-        ++ "\n\n"
+        ++ "\n\n\n"
         ++ decoderDefinitions file
+        ++ "\n\n\n"
+        ++ httpClientDefinitions file
 
 
 sourceFromImports : String -> Set String -> Dict String String -> String
@@ -739,3 +774,170 @@ sanitizeTitleCaseDotPhrase =
     String.replace "()" "_Unit"
         -- using `_` prefix to avoid clash
         >> String.replace "." ""
+
+
+
+--
+
+
+sourceFromFieldPair : FieldPair -> String
+sourceFromFieldPair pair =
+    case pair of
+        CustomField (FieldName fname) ct ->
+            fname ++ " : " ++ sourceFromCustomTypeConstructor ct
+
+        NestedField (FieldName fname) list ->
+            fname
+                ++ " : "
+                ++ "{"
+                ++ String.join ", " (List.map sourceFromFieldPair list)
+                ++ "}"
+
+
+sourceFromCustomTypeConstructor : CustomTypeConstructor -> String
+sourceFromCustomTypeConstructor ct =
+    case ct of
+        CustomTypeConstructor (TitleCaseDotPhrase s) list ->
+            let
+                code =
+                    s
+                        :: List.map sourceFromCustomTypeConstructor list
+                        |> String.join " "
+            in
+            "(" ++ code ++ ")"
+
+        ConstructorTypeParam s ->
+            s
+
+        Tuple2 ct1 ct2 ->
+            "(" ++ sourceFromCustomTypeConstructor ct1 ++ ", " ++ sourceFromCustomTypeConstructor ct2 ++ ")"
+
+        Tuple3 ct1 ct2 ct3 ->
+            "(" ++ sourceFromCustomTypeConstructor ct1 ++ ", " ++ sourceFromCustomTypeConstructor ct2 ++ ", " ++ sourceFromCustomTypeConstructor ct3 ++ ")"
+
+        Function ct1 ct2 ->
+            "(" ++ sourceFromCustomTypeConstructor ct1 ++ " -> " ++ sourceFromCustomTypeConstructor ct2 ++ ")"
+
+
+
+-- API
+{- Option 1
+
+   1. Create a `type alias API = { ... }` record
+   2. [server] Create a `type alias HandleAPI = { ... }` record that matches the accompanying Auto type of `API`
+   3. [client] use generated `httpClient.*` with `Task.attempt`
+   3. [client] Create a Msg variant to Task.attempt each api
+
+-}
+{- Option 2
+
+   1. Create a `type alias API = { ... }` record
+   2. [server] Create a `type alias HandleAPI = { ... }` record that matches the accompanying Auto type of `API`
+   3. [client] use generated `httpClient.*` (Cmd msg)
+   4. [client] handle at `case serverMsg of` (disjointed?)
+
+-}
+
+
+httpClientDefinitions : ElmFile -> String
+httpClientDefinitions elmFile =
+    Dict.foldl (\k v acc -> List.append (generateHttpClientAPIFor elmFile.modulePrefix v) acc)
+        []
+        elmFile.knownTypes
+        |> String.join "\n\n\n"
+
+
+generateHttpClientAPIFor : String -> ElmTypeDef -> List String
+generateHttpClientAPIFor modulePrefix elmTypeDef =
+    case elmTypeDef of
+        TypeAliasDef (AliasRecordType (TypeName tname params) fields) ->
+            if tname == modulePrefix ++ "API" then
+                [ httpClientAPIFor modulePrefix (TypeName tname params) fields
+                , httpServerAPIFor modulePrefix (TypeName tname params) fields
+                ]
+
+            else
+                []
+
+        _ ->
+            []
+
+
+httpClientFieldPair : FieldPair -> FieldPair
+httpClientFieldPair pair =
+    case pair of
+        CustomField fname (Function input output) ->
+            let
+                newOutput =
+                    CustomTypeConstructor
+                        (TitleCaseDotPhrase "Task")
+                        [ CustomTypeConstructor (TitleCaseDotPhrase "Http.Error") []
+                        , output
+                        ]
+            in
+            CustomField fname (Function input newOutput)
+
+        _ ->
+            pair
+
+
+httpClientAPIFor : String -> TypeName -> List FieldPair -> String
+httpClientAPIFor modulePrefix (TypeName tname params) fields =
+    let
+        newFieldPairs =
+            String.join "\n    , " (List.map (httpClientFieldPair >> sourceFromFieldPair) fields)
+
+        typealiasName =
+            String.join " " ("HttpClientAPI" :: params)
+
+        typealias =
+            "type alias "
+                ++ typealiasName
+                ++ " =\n    { {fieldPairs}\n    }"
+                |> String.replace "{fieldPairs}" newFieldPairs
+
+        typeSig =
+            List.append
+                (List.map (\word -> "(Json.Decode.Decoder " ++ word ++ ")") params)
+                [ typealiasName ]
+                |> String.join " -> "
+                |> (\s -> typealias ++ "\n\n\nhttpClient : " ++ s)
+
+        lhs =
+            ("httpClient"
+                :: List.map (\word -> "arg" ++ word) params
+            )
+                |> String.join " "
+
+        rhs =
+            List.map (httpClientTaskFunc modulePrefix) fields
+                |> String.join "\n    , "
+    in
+    typeSig ++ "\n" ++ lhs ++ " =\n    { " ++ rhs ++ "\n    }"
+
+
+httpClientTaskFunc : String -> FieldPair -> String
+httpClientTaskFunc modulePrefix pair =
+    case pair of
+        CustomField (FieldName fname) (Function input output) ->
+            """{fieldName} = \\input ->
+        Http.task
+            { method = "POST"
+            , headers = []
+            , url = "/{modulePath}{fieldName}"
+            , body = Http.jsonBody ({inputEncoder} input)
+            , resolver = Http.stringResolver (httpJsonBodyResolver {outputDecoder})
+            , timeout = Just 60000
+            }"""
+                |> String.replace "{modulePath}" (String.toLower (String.replace "." "/" modulePrefix))
+                |> String.replace "{fieldName}" fname
+                |> String.replace "{inputEncoder}" (constructorFunctionName "encode" input)
+                |> String.replace "{outputDecoder}" (constructorFunctionName "decode" output)
+
+        _ ->
+            "-- does not support " ++ Debug.toString pair
+
+
+httpServerAPIFor : String -> TypeName -> List FieldPair -> String
+httpServerAPIFor modulePrefix (TypeName tname params) fields =
+    "-- httpServerAPIFor"

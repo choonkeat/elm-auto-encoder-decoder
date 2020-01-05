@@ -14,6 +14,14 @@ import Platform
 import Set
 
 
+-- API IMPORTS
+
+
+import Platform exposing (Task)
+import Http
+
+
+
 -- HARDCODE
 
 
@@ -115,6 +123,28 @@ decode_Unit  =
             )
 
 
+httpJsonBodyResolver : Json.Decode.Decoder a -> Http.Response String -> Result Http.Error a
+httpJsonBodyResolver decoder resp =
+    case resp of
+        Http.GoodStatus_ m s ->
+            Json.Decode.decodeString decoder s
+                |> Result.mapError (Json.Decode.errorToString >> Http.BadBody)
+
+        Http.BadUrl_ s ->
+            Err (Http.BadUrl s)
+
+        Http.Timeout_ ->
+            Err Http.Timeout
+
+        Http.NetworkError_ ->
+            Err Http.NetworkError
+
+        Http.BadStatus_ m s ->
+            Json.Decode.decodeString decoder s
+                -- just trying; if our decoder understands the response body, great
+                |> Result.mapError (\_ -> Http.BadStatus m.statusCode)
+
+
 -- PRELUDE
 
 
@@ -161,6 +191,7 @@ decodeResult argx arga =
                     _ -> Json.Decode.fail ("Unexpected Result: " ++ word)
             )
                  
+
 
 
 
@@ -232,6 +263,7 @@ encodeFooBarPerson value =
         [ ("name", (encodeString) value.name)
         , ("age", (encodeInt) value.age)
         ]
+
 
 {-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Acknowledgement" ["x"]) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []])) -}
 decodeFooBarAcknowledgement : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Acknowledgement x)
@@ -316,3 +348,5 @@ decodeFooBarPerson  =
     Json.Decode.succeed Foo.Bar.Person
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "name" ] (decodeString))
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "age" ] (decodeInt))
+
+
