@@ -10,6 +10,7 @@ import Json.Decode
 import Json.Decode.Pipeline
 import Json.Encode
 import Main
+import Platform
 import Set
 
 
@@ -51,7 +52,13 @@ encodeDictDict keyEncoder =
     Json.Encode.dict (\k -> Json.Encode.encode 0 (keyEncoder k))
 
 
+encode_Unit : () -> Json.Encode.Value
+encode_Unit value =
+    Json.Encode.list identity [ encodeString "" ]
+
+
 --
+
 
 decodeString : Json.Decode.Decoder String
 decodeString =
@@ -95,6 +102,18 @@ decodeDictDict keyDecoder valueDecoder =
                         acc
             ) Dict.empty dict
         )
+
+
+decode_Unit : Json.Decode.Decoder ()
+decode_Unit  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "" -> (Json.Decode.succeed ())
+                    _ -> Json.Decode.fail ("Unexpected Unit: " ++ word)
+            )
+
 
 -- PRELUDE
 
@@ -143,6 +162,13 @@ decodeResult argx arga =
             )
                  
 
+
+
+
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Acknowledgement" ["x"]) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []])) -}
+encodeFooBarAcknowledgement : (x -> Json.Encode.Value) -> Foo.Bar.Acknowledgement x -> Json.Encode.Value
+encodeFooBarAcknowledgement argx value =
+    (encodeResult (argx) (encode_Unit)) value
 
 
 
@@ -206,6 +232,13 @@ encodeFooBarPerson value =
         [ ("name", (encodeString) value.name)
         , ("age", (encodeInt) value.age)
         ]
+
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Acknowledgement" ["x"]) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []])) -}
+decodeFooBarAcknowledgement : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Acknowledgement x)
+decodeFooBarAcknowledgement argx =
+    (decodeResult (argx) (decode_Unit))
+
+
 
 {-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Choice" []) (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Option") [CustomTypeConstructor (TitleCaseDotPhrase "Bool") []])) -}
 decodeFooBarChoice : Json.Decode.Decoder (Foo.Bar.Choice)

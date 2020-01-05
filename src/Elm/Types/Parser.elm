@@ -346,7 +346,9 @@ functionFromCustomTypeConstructor ct =
 anyCustomTypeConstructor : Parser.Parser CustomTypeConstructor
 anyCustomTypeConstructor =
     Parser.oneOf
-        [ Parser.backtrackable (parenthesised tupleParams)
+        [ Parser.succeed (CustomTypeConstructor (TitleCaseDotPhrase "()") [])
+            |. Parser.symbol "()"
+        , Parser.backtrackable (parenthesised tupleParams)
         , parenthesised nestedTypeName
         , Parser.succeed (\s -> CustomTypeConstructor s [])
             |= titleCaseDotPhrase
@@ -940,13 +942,20 @@ fileContent =
                 , ( "String.String", "String" )
                 , ( "Set", "Set.Set" )
                 , ( "Dict", "Dict.Dict" )
+                , ( "Never", "Never" )
+                , ( "Result", "Result" )
                 , ( "Maybe", "Maybe" )
                 , ( "Maybe.Maybe", "Maybe" )
+                , ( "Array", "Array" )
+                , ( "Char", "Char" )
                 , ( "List", "List" )
                 , ( "List.List", "List" )
                 , ( "Int", "Int" )
                 , ( "Float", "Float" )
                 , ( "Bool", "Bool" )
+                , ( "ProcessId", "Platform.ProcessId" )
+                , ( "Task", "Platform.Task" )
+                , ( "Tuple", "Tuple" )
                 ]
         , knownTypes = Dict.empty
         , skipTypes = Set.empty

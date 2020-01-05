@@ -58,7 +58,13 @@ encodeDictDict keyEncoder =
     Json.Encode.dict (\\k -> Json.Encode.encode 0 (keyEncoder k))
 
 
+encode_Unit : () -> Json.Encode.Value
+encode_Unit value =
+    Json.Encode.list identity [ encodeString "" ]
+
+
 --
+
 
 decodeString : Json.Decode.Decoder String
 decodeString =
@@ -102,6 +108,18 @@ decodeDictDict keyDecoder valueDecoder =
                         acc
             ) Dict.empty dict
         )
+
+
+decode_Unit : Json.Decode.Decoder ()
+decode_Unit  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\\word ->
+                case word of
+                    "" -> (Json.Decode.succeed ())
+                    _ -> Json.Decode.fail ("Unexpected Unit: " ++ word)
+            )
+
 
 -- PRELUDE
 
@@ -718,4 +736,6 @@ decoderBodyOfFieldPair index fieldPair =
 
 sanitizeTitleCaseDotPhrase : String -> String
 sanitizeTitleCaseDotPhrase =
-    String.replace "." ""
+    String.replace "()" "_Unit"
+        -- using `_` prefix to avoid clash
+        >> String.replace "." ""

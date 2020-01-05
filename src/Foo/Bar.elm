@@ -12,6 +12,7 @@ module Foo.Bar exposing (..)
 
     encodeFooBarOption Json.Encode.int optionValue
         |> Json.Encode.encode 0
+        |> Debug.log "encoded as"
         |> Json.Decode.decodeString (decodeFooBarOption Json.Decode.int)
     --> Ok optionValue
 
@@ -21,6 +22,7 @@ module Foo.Bar exposing (..)
 
     encodeFooBarHello Json.Encode.int helloValue
         |> Json.Encode.encode 0
+        |> Debug.log "encoded as"
         |> Json.Decode.decodeString (decodeFooBarHello Json.Decode.int)
     --> Ok helloValue
 
@@ -30,6 +32,7 @@ module Foo.Bar exposing (..)
 
     encodeFooBarPerson personValue
         |> Json.Encode.encode 0
+        |> Debug.log "encoded as"
         |> Json.Decode.decodeString decodeFooBarPerson
     --> Ok personValue
 
@@ -39,8 +42,19 @@ module Foo.Bar exposing (..)
 
     encodeFooBarPayload payloadValue
         |> Json.Encode.encode 0
+        |> Debug.log "encoded as"
         |> Json.Decode.decodeString decodeFooBarPayload
     --> Ok payloadValue
+
+    acknowledgementValue : Acknowledgement Int
+    acknowledgementValue =
+        Ok ()
+
+    encodeFooBarAcknowledgement Json.Encode.int acknowledgementValue
+        |> Json.Encode.encode 0
+        |> Debug.log "encoded as"
+        |> Json.Decode.decodeString (decodeFooBarAcknowledgement Json.Decode.int)
+    --> Ok acknowledgementValue
 
 -}
 
@@ -84,3 +98,7 @@ type alias Lookup =
 type Msg
     = Noop
     | Changes (String -> Int -> String)
+
+
+type alias Acknowledgement x =
+    Result x ()
