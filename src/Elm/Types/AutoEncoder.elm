@@ -156,7 +156,7 @@ constructorFunctionName funcPrefix ct =
                         |> String.join " "
 
                 ConstructorTypeParam s ->
-                    "funcArg" ++ s
+                    "arg" ++ s
 
                 Tuple2 ct0 ct1 ->
                     constructorFunctionName funcPrefix ct0
@@ -301,7 +301,7 @@ encoderFunctionArguments elmTypeDef =
     let
         functionArguments ((TypeName s list) as tname) =
             List.append
-                (List.indexedMap (\i word -> "funcArg" ++ word) list)
+                (List.indexedMap (\i word -> "arg" ++ word) list)
                 [ "value" ]
     in
     case elmTypeDef of
@@ -411,10 +411,10 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
 
                 ConstructorTypeParam s ->
                     if varPrefix == "" then
-                        "funcArg" ++ s
+                        "arg" ++ s
 
                     else
-                        "funcArg" ++ s ++ " " ++ varPrefix ++ String.fromInt i
+                        "arg" ++ s ++ " " ++ varPrefix ++ String.fromInt i
 
                 Tuple2 ct0 ct1 ->
                     encoderSourceFromCustomTypeConstructor varPrefix 0 ct0
@@ -548,7 +548,7 @@ decoderFunctionArguments : ElmTypeDef -> String
 decoderFunctionArguments elmTypeDef =
     let
         functionArguments ((TypeName s list) as tname) =
-            List.indexedMap (\i word -> "funcArg" ++ word) list
+            List.indexedMap (\i word -> "arg" ++ word) list
     in
     case elmTypeDef of
         CustomTypeDef { name, constructors } ->
@@ -622,7 +622,7 @@ decoderPatternMatchesRHS constructor =
                         |> String.join " |> "
 
                 ConstructorTypeParam s ->
-                    "funcArg" ++ s
+                    "arg" ++ s
 
                 Tuple2 ct0 ct1 ->
                     "(" ++ decoderPatternMatchesRHS ct0 ++ ", " ++ decoderPatternMatchesRHS ct1 ++ ")"
@@ -657,7 +657,7 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
                         |> String.join " "
 
                 ConstructorTypeParam s ->
-                    "funcArg" ++ s
+                    "arg" ++ s
 
                 Tuple2 ct0 ct1 ->
                     decoderSourceFromCustomTypeConstructor pipelining 0 ct0

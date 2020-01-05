@@ -101,29 +101,29 @@ decodeDictDict keyDecoder valueDecoder =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Nothing") [],CustomTypeConstructor (TitleCaseDotPhrase "Just") [ConstructorTypeParam "a"]], name = TypeName "Maybe" ["a"] } -}
 encodeMaybe : (a -> Json.Encode.Value) -> Maybe a -> Json.Encode.Value
-encodeMaybe funcArga value =
+encodeMaybe arga value =
     case value of
         (Nothing) -> (Json.Encode.list identity [ encodeString "Nothing" ])
-        (Just m0) -> (Json.Encode.list identity [ encodeString "Just", (funcArga m0) ])
+        (Just m0) -> (Json.Encode.list identity [ encodeString "Just", (arga m0) ])
 
 
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Err") [ConstructorTypeParam "x"],CustomTypeConstructor (TitleCaseDotPhrase "Ok") [ConstructorTypeParam "a"]], name = TypeName "Result" ["x","a"] } -}
 encodeResult : (x -> Json.Encode.Value) -> (a -> Json.Encode.Value) -> Result x a -> Json.Encode.Value
-encodeResult funcArgx funcArga value =
+encodeResult argx arga value =
     case value of
-        (Err m0) -> (Json.Encode.list identity [ encodeString "Err", (funcArgx m0) ])
-        (Ok m0) -> (Json.Encode.list identity [ encodeString "Ok", (funcArga m0) ])
+        (Err m0) -> (Json.Encode.list identity [ encodeString "Err", (argx m0) ])
+        (Ok m0) -> (Json.Encode.list identity [ encodeString "Ok", (arga m0) ])
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Nothing") [],CustomTypeConstructor (TitleCaseDotPhrase "Just") [ConstructorTypeParam "a"]], name = TypeName "Maybe" ["a"] } -}
 decodeMaybe : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Maybe a)
-decodeMaybe funcArga =
+decodeMaybe arga =
     Json.Decode.index 0 Json.Decode.string
         |> Json.Decode.andThen
             (\word ->
                 case word of
                     "Nothing" -> (Json.Decode.succeed Nothing)
-                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (funcArga))))
+                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Maybe: " ++ word)
             )
                  
@@ -132,13 +132,13 @@ decodeMaybe funcArga =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Err") [ConstructorTypeParam "x"],CustomTypeConstructor (TitleCaseDotPhrase "Ok") [ConstructorTypeParam "a"]], name = TypeName "Result" ["x","a"] } -}
 decodeResult : (Json.Decode.Decoder (x)) -> (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Result x a)
-decodeResult funcArgx funcArga =
+decodeResult argx arga =
     Json.Decode.index 0 Json.Decode.string
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (funcArgx))))
-                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (funcArga))))
+                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (argx))))
+                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Result: " ++ word)
             )
                  
@@ -155,10 +155,10 @@ encodeFooBarChoice value =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
 encodeFooBarHello : (x -> Json.Encode.Value) -> Foo.Bar.Hello x -> Json.Encode.Value
-encodeFooBarHello funcArgx value =
+encodeFooBarHello argx value =
     case value of
         (Foo.Bar.Hello) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Hello" ])
-        (Foo.Bar.Good m0 m1) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Good", (encodeString m0), (encodeResult (funcArgx) (encodeMaybe (encodeString)) m1) ])
+        (Foo.Bar.Good m0 m1) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Good", (encodeString m0), (encodeResult (argx) (encodeMaybe (encodeString)) m1) ])
 
 
 
@@ -182,10 +182,10 @@ encodeFooBarMsg value =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
 encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
-encodeFooBarOption funcArga value =
+encodeFooBarOption arga value =
     case value of
         (Foo.Bar.None) -> (Json.Encode.list identity [ encodeString "Foo.Bar.None" ])
-        (Foo.Bar.Some m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Some", (funcArga m0) ])
+        (Foo.Bar.Some m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Some", (arga m0) ])
 
 
 
@@ -216,13 +216,13 @@ decodeFooBarChoice  =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
 decodeFooBarHello : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Hello x)
-decodeFooBarHello funcArgx =
+decodeFooBarHello argx =
     Json.Decode.index 0 Json.Decode.string
         |> Json.Decode.andThen
             (\word ->
                 case word of
                     "Foo.Bar.Hello" -> (Json.Decode.succeed Foo.Bar.Hello)
-                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeString))) |> (Json.Decode.Pipeline.custom (Json.Decode.index 2 (decodeResult (funcArgx) (decodeMaybe (decodeString))))))
+                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeString))) |> (Json.Decode.Pipeline.custom (Json.Decode.index 2 (decodeResult (argx) (decodeMaybe (decodeString))))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Hello: " ++ word)
             )
                  
@@ -255,13 +255,13 @@ decodeFooBarMsg  =
 
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
 decodeFooBarOption : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Foo.Bar.Option a)
-decodeFooBarOption funcArga =
+decodeFooBarOption arga =
     Json.Decode.index 0 Json.Decode.string
         |> Json.Decode.andThen
             (\word ->
                 case word of
                     "Foo.Bar.None" -> (Json.Decode.succeed Foo.Bar.None)
-                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (funcArga))))
+                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
             )
                  

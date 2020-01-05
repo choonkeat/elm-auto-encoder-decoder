@@ -79,6 +79,8 @@ type alias Lookup =
     Dict String Int
 
 
+{-| There will not be an Auto encoder/decoder for this type since it contains a function
+-}
 type Msg
     = Noop
     | Changes (String -> Int -> String)
