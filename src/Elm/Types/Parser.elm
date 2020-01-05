@@ -540,12 +540,19 @@ fieldName =
     import Parser
     import Elm.Types exposing (..)
 
+    userStringField : FieldPair
+    userStringField =
+        CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") [])
+
     Parser.run fieldPair "userID : String"
-    --> Ok (CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []))
+    --> Ok userStringField
 
 -}
 fieldPair : Parser.Parser FieldPair
 fieldPair =
+    -- FAILING:
+    -- Parser.run fieldPair "info : { userID : String }"
+    -- --> Ok (NestedField (FieldName "info") [ userStringField ])
     Parser.oneOf
         [ Parser.backtrackable <|
             Parser.succeed CustomField
