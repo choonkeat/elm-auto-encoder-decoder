@@ -196,7 +196,7 @@ decodeResult argx arga =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
 encodeFooAPIAPI : (x -> Json.Encode.Value) -> Foo.API.API x -> Json.Encode.Value
 encodeFooAPIAPI argx value =
     Json.Encode.object
@@ -289,7 +289,7 @@ encodeFooAPIUpdateThingInput value =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
 decodeFooAPIAPI : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.API.API x)
 decodeFooAPIAPI argx =
     Json.Decode.succeed Foo.API.API
@@ -380,17 +380,25 @@ decodeFooAPIUpdateThingInput  =
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "name" ] (decodeString))
 
 
-type APIServerMsg x
-    = OndeleteThing (Result x (()))
-    | OnupdateThing (Result x (Foo.API.Thing))
-    | OncreateThing (Result x (Foo.API.Thing))
-    | Onthing (Result x (Foo.API.Thing))
-    | OnlistThings (Result x (List (Foo.API.Thing)))
+type ServerMsg x
+    = OnDeleteThing (Result x (()))
+    | OnUpdateThing (Result x (Foo.API.Thing))
+    | OnCreateThing (Result x (Foo.API.Thing))
+    | OnThing (Maybe (Foo.API.Thing))
+    | OnListThings (List (Foo.API.Thing))
+
+
+type ClientMsg
+    = DoDeleteThing (Foo.API.DeleteThingInput)
+    | DoUpdateThing (Foo.API.UpdateThingInput)
+    | DoCreateThing (Foo.API.CreateThingInput)
+    | DoThing (Foo.API.ShowThingInput)
+    | DoListThings (Foo.API.ListThingInput)
 
 
 type alias HttpClientAPI x =
-    { listThings : ((Foo.API.ListThingInput) -> (Task (Http.Error) (Result x (List (Foo.API.Thing)))))
-    , thing : ((Foo.API.ShowThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
+    { listThings : ((Foo.API.ListThingInput) -> (Task (Http.Error) (List (Foo.API.Thing))))
+    , thing : ((Foo.API.ShowThingInput) -> (Task (Http.Error) (Maybe (Foo.API.Thing))))
     , createThing : ((Foo.API.CreateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
     , updateThing : ((Foo.API.UpdateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
     , deleteThing : ((Foo.API.DeleteThingInput) -> (Task (Http.Error) (Result x (()))))
@@ -405,7 +413,7 @@ httpClient argx =
             , headers = []
             , url = "/foo/api/listThings"
             , body = Http.jsonBody ((encodeFooAPIListThingInput) input)
-            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeResult (argx) (decodeList (decodeFooAPIThing))))
+            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeList (decodeFooAPIThing)))
             , timeout = Just 60000
             }
     , thing = \input ->
@@ -414,7 +422,7 @@ httpClient argx =
             , headers = []
             , url = "/foo/api/thing"
             , body = Http.jsonBody ((encodeFooAPIShowThingInput) input)
-            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeResult (argx) (decodeFooAPIThing)))
+            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeMaybe (decodeFooAPIThing)))
             , timeout = Just 60000
             }
     , createThing = \input ->

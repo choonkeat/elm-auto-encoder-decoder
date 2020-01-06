@@ -853,6 +853,7 @@ generateHttpClientAPIFor modulePrefix elmTypeDef =
         TypeAliasDef (AliasRecordType (TypeName tname params) fields) ->
             if tname == modulePrefix ++ "API" then
                 [ serverMsgType (TypeName tname params) fields
+                , clientMsgType (TypeName tname params) fields
                 , httpClientAPIFor modulePrefix (TypeName tname params) fields
                 , httpServerAPIFor modulePrefix (TypeName tname params) fields
                 ]
@@ -947,7 +948,17 @@ serverMsgFieldPair : FieldPair -> List CustomTypeConstructor
 serverMsgFieldPair pair =
     case pair of
         CustomField (FieldName fname) (Function input output) ->
-            [ CustomTypeConstructor (TitleCaseDotPhrase ("On" ++ fname)) [ output ] ]
+            [ CustomTypeConstructor (TitleCaseDotPhrase ("On" ++ upperCaseFirst fname)) [ output ] ]
+
+        _ ->
+            []
+
+
+clientMsgFieldPair : FieldPair -> List CustomTypeConstructor
+clientMsgFieldPair pair =
+    case pair of
+        CustomField (FieldName fname) (Function input output) ->
+            [ CustomTypeConstructor (TitleCaseDotPhrase ("Do" ++ upperCaseFirst fname)) [ input ] ]
 
         _ ->
             []
@@ -956,19 +967,92 @@ serverMsgFieldPair pair =
 serverMsgType : TypeName -> List FieldPair -> String
 serverMsgType (TypeName tname params) fields =
     let
+        effectiveTypes =
+            List.foldl (\pair acc -> List.append (serverMsgFieldPair pair) acc) [] fields
+
+        effectiveParam =
+            params
+                |> List.filter (\x -> List.any (containsTypeParam x) effectiveTypes)
+
         typealiasName =
-            "APIServerMsg"
-                :: params
+            "ServerMsg"
+                :: effectiveParam
                 |> String.join " "
 
         constructors =
-            List.foldl (\pair acc -> List.append (serverMsgFieldPair pair) acc) [] fields
+            effectiveTypes
                 |> List.map sourceFromCustomTypeConstructor
                 |> List.map (String.dropLeft 1 >> String.dropRight 1)
     in
     "type " ++ typealiasName ++ "\n    = " ++ String.join "\n    | " constructors
 
 
+clientMsgType : TypeName -> List FieldPair -> String
+clientMsgType (TypeName tname params) fields =
+    let
+        effectiveTypes =
+            List.foldl (\pair acc -> List.append (clientMsgFieldPair pair) acc) [] fields
+
+        effectiveParam =
+            params
+                |> List.filter (\x -> List.any (containsTypeParam x) effectiveTypes)
+
+        typealiasName =
+            "ClientMsg"
+                :: effectiveParam
+                |> String.join " "
+
+        constructors =
+            effectiveTypes
+                |> List.map sourceFromCustomTypeConstructor
+                |> List.map (String.dropLeft 1 >> String.dropRight 1)
+    in
+    "type " ++ typealiasName ++ "\n    = " ++ String.join "\n    | " constructors
+
+
+
+-- SERVER
+
+
 httpServerAPIFor : String -> TypeName -> List FieldPair -> String
 httpServerAPIFor modulePrefix (TypeName tname params) fields =
     "-- httpServerAPIFor"
+
+
+upperCaseFirst : String -> String
+upperCaseFirst s =
+    case String.uncons s of
+        Just ( c, xs ) ->
+            String.cons (Char.toUpper c) xs
+
+        _ ->
+            s
+
+
+containsTypeParamFieldPair : String -> FieldPair -> Bool
+containsTypeParamFieldPair x pair =
+    case pair of
+        CustomField _ ct ->
+            containsTypeParam x ct
+
+        NestedField _ list ->
+            List.any (containsTypeParamFieldPair x) list
+
+
+containsTypeParam : String -> CustomTypeConstructor -> Bool
+containsTypeParam x ct =
+    case ct of
+        CustomTypeConstructor _ ctList ->
+            List.any (containsTypeParam x) ctList
+
+        ConstructorTypeParam s ->
+            s == x
+
+        Tuple2 ct1 ct2 ->
+            containsTypeParam x ct1 || containsTypeParam x ct2
+
+        Tuple3 ct1 ct2 ct3 ->
+            containsTypeParam x ct1 || containsTypeParam x ct2 || containsTypeParam x ct3
+
+        Function ct1 ct2 ->
+            containsTypeParam x ct1 || containsTypeParam x ct2

@@ -10,8 +10,8 @@ type alias Response x =
 
 
 type alias API x =
-    { listThings : ListThingInput -> Result x (List Thing)
-    , thing : ShowThingInput -> Result x Thing
+    { listThings : ListThingInput -> List Thing
+    , thing : ShowThingInput -> Maybe Thing
     , createThing : CreateThingInput -> Result x Thing
     , updateThing : UpdateThingInput -> Result x Thing
     , deleteThing : DeleteThingInput -> Result x ()
