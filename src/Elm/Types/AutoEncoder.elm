@@ -1,4 +1,4 @@
-module Elm.Types.AutoEncoder exposing (decoderDefinitions, encoderDefinitions, produceSourceCode)
+module Elm.Types.AutoEncoder exposing (decoderDefinitions, encoderDecoderSourceCodeFrom, encoderDefinitions, produceSourceCode)
 
 import Dict exposing (Dict)
 import Elm.Types exposing (..)
@@ -230,6 +230,19 @@ constructorFunctionName funcPrefix ct =
 jsonString : String -> String
 jsonString str =
     Json.Encode.encode 0 (Json.Encode.string str)
+
+
+encoderDecoderSourceCodeFrom : String -> Result (List Parser.DeadEnd) String
+encoderDecoderSourceCodeFrom typedefSourceCode =
+    case Parser.run Elm.Types.Parser.fileContent typedefSourceCode of
+        Ok elmFile ->
+            encoderDefinitions elmFile
+                ++ "\n\n"
+                ++ decoderDefinitions elmFile
+                |> Ok
+
+        Err err ->
+            Err err
 
 
 produceSourceCode : String -> ElmFile -> String
@@ -853,11 +866,30 @@ generateHttpClientAPIFor modulePrefix elmTypeDef =
     case elmTypeDef of
         TypeAliasDef (AliasRecordType (TypeName tname params) fields) ->
             if tname == modulePrefix ++ "API" then
-                [ serverMsgType (TypeName tname params) fields
-                , clientMsgType (TypeName tname params) fields
-                , httpClientAPIFor modulePrefix (TypeName tname params) fields
-                , httpServerAPIFor modulePrefix (TypeName tname params) fields
-                ]
+                let
+                    typesSourceCode =
+                        [ serverMsgType (TypeName tname params) fields
+                        , clientMsgType (TypeName tname params) fields
+                        ]
+
+                    encDecCode =
+                        case encoderDecoderSourceCodeFrom (String.join "\n\n\n" typesSourceCode) of
+                            Ok a ->
+                                a
+
+                            Err err ->
+                                "{- Err encDecCode: "
+                                    ++ Debug.toString err
+                                    ++ " -}"
+                                    ++ "{- "
+                                    ++ String.join "\n\n\n" typesSourceCode
+                                    ++ "-}"
+                in
+                List.append typesSourceCode
+                    [ encDecCode
+                    , httpClientAPIFor modulePrefix (TypeName tname params) fields
+                    , httpServerAPIFor modulePrefix (TypeName tname params) fields
+                    ]
 
             else
                 []

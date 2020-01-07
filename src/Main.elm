@@ -101,9 +101,7 @@ subscriptions model =
 -}
 stdlib : Result (List Parser.DeadEnd) String
 stdlib =
-    let
-        data =
-            """
+    Elm.Types.AutoEncoder.encoderDecoderSourceCodeFrom """
 
 type Maybe a
     = Nothing
@@ -114,16 +112,6 @@ type Result x a
     | Ok a
 
             """
-    in
-    case Parser.run Elm.Types.Parser.fileContent data of
-        Ok elmFile ->
-            Elm.Types.AutoEncoder.encoderDefinitions elmFile
-                ++ "\n\n"
-                ++ Elm.Types.AutoEncoder.decoderDefinitions elmFile
-                |> Ok
-
-        Err err ->
-            Err err
 
 
 

@@ -196,7 +196,7 @@ decodeResult argx arga =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Acknowledgement") [ConstructorTypeParam "x"]))]) -}
 encodeFooAPIAPI : (x -> Json.Encode.Value) -> (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> Foo.API.API x a b -> Json.Encode.Value
 encodeFooAPIAPI argx arga argb value =
     Json.Encode.object
@@ -289,7 +289,7 @@ encodeFooAPIUpdateThingInput value =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Acknowledgement") [ConstructorTypeParam "x"]))]) -}
 decodeFooAPIAPI : (Json.Decode.Decoder (x)) -> (Json.Decode.Decoder (a)) -> (Json.Decode.Decoder (b)) -> Json.Decode.Decoder (Foo.API.API x a b)
 decodeFooAPIAPI argx arga argb =
     Json.Decode.succeed Foo.API.API
@@ -381,7 +381,7 @@ decodeFooAPIUpdateThingInput  =
 
 
 type ServerMsg x a b
-    = OnDeleteThing (Result x (()))
+    = OnDeleteThing (Foo.API.Acknowledgement x)
     | OnUpdateThing (Result x (Foo.API.Thing))
     | OnCreateThing (Result x (Foo.API.Thing))
     | OnThing (Maybe b)
@@ -396,12 +396,69 @@ type ClientMsg
     | DoListThings (Foo.API.ListThingInput)
 
 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "DoDeleteThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoUpdateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoCreateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoListThings") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []]], name = TypeName "ClientMsg" [] } -}
+encodeClientMsg : ClientMsg -> Json.Encode.Value
+encodeClientMsg value =
+    case value of
+        (DoDeleteThing m0) -> (Json.Encode.list identity [ encodeString "DoDeleteThing", (encodeFooAPIDeleteThingInput m0) ])
+        (DoUpdateThing m0) -> (Json.Encode.list identity [ encodeString "DoUpdateThing", (encodeFooAPIUpdateThingInput m0) ])
+        (DoCreateThing m0) -> (Json.Encode.list identity [ encodeString "DoCreateThing", (encodeFooAPICreateThingInput m0) ])
+        (DoThing m0) -> (Json.Encode.list identity [ encodeString "DoThing", (encodeFooAPIShowThingInput m0) ])
+        (DoListThings m0) -> (Json.Encode.list identity [ encodeString "DoListThings", (encodeFooAPIListThingInput m0) ])
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "OnDeleteThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Acknowledgement") [ConstructorTypeParam "x"]],CustomTypeConstructor (TitleCaseDotPhrase "OnUpdateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]],CustomTypeConstructor (TitleCaseDotPhrase "OnCreateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]],CustomTypeConstructor (TitleCaseDotPhrase "OnThing") [CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"]],CustomTypeConstructor (TitleCaseDotPhrase "OnListThings") [CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"]]], name = TypeName "ServerMsg" ["x","a","b"] } -}
+encodeServerMsg : (x -> Json.Encode.Value) -> (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> ServerMsg x a b -> Json.Encode.Value
+encodeServerMsg argx arga argb value =
+    case value of
+        (OnDeleteThing m0) -> (Json.Encode.list identity [ encodeString "OnDeleteThing", (encodeFooAPIAcknowledgement (argx) m0) ])
+        (OnUpdateThing m0) -> (Json.Encode.list identity [ encodeString "OnUpdateThing", (encodeResult (argx) (encodeFooAPIThing) m0) ])
+        (OnCreateThing m0) -> (Json.Encode.list identity [ encodeString "OnCreateThing", (encodeResult (argx) (encodeFooAPIThing) m0) ])
+        (OnThing m0) -> (Json.Encode.list identity [ encodeString "OnThing", (encodeMaybe (argb) m0) ])
+        (OnListThings m0) -> (Json.Encode.list identity [ encodeString "OnListThings", (encodeList (arga) m0) ])
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "DoDeleteThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoUpdateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoCreateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []],CustomTypeConstructor (TitleCaseDotPhrase "DoListThings") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []]], name = TypeName "ClientMsg" [] } -}
+decodeClientMsg : Json.Decode.Decoder (ClientMsg)
+decodeClientMsg  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "DoDeleteThing" -> (Json.Decode.succeed DoDeleteThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPIDeleteThingInput))))
+                    "DoUpdateThing" -> (Json.Decode.succeed DoUpdateThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPIUpdateThingInput))))
+                    "DoCreateThing" -> (Json.Decode.succeed DoCreateThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPICreateThingInput))))
+                    "DoThing" -> (Json.Decode.succeed DoThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPIShowThingInput))))
+                    "DoListThings" -> (Json.Decode.succeed DoListThings |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPIListThingInput))))
+                    _ -> Json.Decode.fail ("Unexpected ClientMsg: " ++ word)
+            )
+                 
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "OnDeleteThing") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Acknowledgement") [ConstructorTypeParam "x"]],CustomTypeConstructor (TitleCaseDotPhrase "OnUpdateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]],CustomTypeConstructor (TitleCaseDotPhrase "OnCreateThing") [CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []]],CustomTypeConstructor (TitleCaseDotPhrase "OnThing") [CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"]],CustomTypeConstructor (TitleCaseDotPhrase "OnListThings") [CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"]]], name = TypeName "ServerMsg" ["x","a","b"] } -}
+decodeServerMsg : (Json.Decode.Decoder (x)) -> (Json.Decode.Decoder (a)) -> (Json.Decode.Decoder (b)) -> Json.Decode.Decoder (ServerMsg x a b)
+decodeServerMsg argx arga argb =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "OnDeleteThing" -> (Json.Decode.succeed OnDeleteThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeFooAPIAcknowledgement (argx)))))
+                    "OnUpdateThing" -> (Json.Decode.succeed OnUpdateThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeResult (argx) (decodeFooAPIThing)))))
+                    "OnCreateThing" -> (Json.Decode.succeed OnCreateThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeResult (argx) (decodeFooAPIThing)))))
+                    "OnThing" -> (Json.Decode.succeed OnThing |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeMaybe (argb)))))
+                    "OnListThings" -> (Json.Decode.succeed OnListThings |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeList (arga)))))
+                    _ -> Json.Decode.fail ("Unexpected ServerMsg: " ++ word)
+            )
+                 
+
+
 type alias HttpClientAPI x a b =
     { listThings : (Foo.API.ListThingInput) -> (Task (Http.Error) (List a))
     , thing : (Foo.API.ShowThingInput) -> (Task (Http.Error) (Maybe b))
     , createThing : (Foo.API.CreateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing)))
     , updateThing : (Foo.API.UpdateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing)))
-    , deleteThing : (Foo.API.DeleteThingInput) -> (Task (Http.Error) (Result x (())))
+    , deleteThing : (Foo.API.DeleteThingInput) -> (Task (Http.Error) (Foo.API.Acknowledgement x))
     }
 
 
@@ -449,7 +506,7 @@ httpClient argx arga argb =
             , headers = []
             , url = "/foo/api/deleteThing"
             , body = Http.jsonBody ((encodeFooAPIDeleteThingInput) input)
-            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeResult (argx) (decode_Unit)))
+            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeFooAPIAcknowledgement (argx)))
             , timeout = Just 60000
             }
     }
@@ -460,7 +517,7 @@ type alias HttpServerAPI headerContext serverState x a b =
     , thing : headerContext -> serverState -> (Foo.API.ShowThingInput) -> (serverState, (Task (Never) (Maybe b)))
     , createThing : headerContext -> serverState -> (Foo.API.CreateThingInput) -> (serverState, (Task x (Foo.API.Thing)))
     , updateThing : headerContext -> serverState -> (Foo.API.UpdateThingInput) -> (serverState, (Task x (Foo.API.Thing)))
-    , deleteThing : headerContext -> serverState -> (Foo.API.DeleteThingInput) -> (serverState, (Task x (())))
+    , deleteThing : headerContext -> serverState -> (Foo.API.DeleteThingInput) -> (serverState, (Task (Never) (Foo.API.Acknowledgement x)))
     }
 
 
@@ -525,6 +582,6 @@ routeHttpServerAPI argheaderContext argserverState argx arga argb router headerV
                     (newServerState, task) =
                         router.deleteThing ctx serverState input
                 in
-                Just (newServerState, Task.attempt OnDeleteThing task)
+                Just (newServerState, Task.perform OnDeleteThing task)
 
     _ -> Nothing

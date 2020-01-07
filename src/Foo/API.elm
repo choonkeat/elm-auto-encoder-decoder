@@ -14,7 +14,9 @@ type alias API x a b =
     , thing : ShowThingInput -> Maybe b
     , createThing : CreateThingInput -> Result x Thing
     , updateThing : UpdateThingInput -> Result x Thing
-    , deleteThing : DeleteThingInput -> Result x ()
+
+    -- bug with `, deleteThing : DeleteThingInput -> Result x ()`
+    , deleteThing : DeleteThingInput -> Acknowledgement x
     }
 
 
