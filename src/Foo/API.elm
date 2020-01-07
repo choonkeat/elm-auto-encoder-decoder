@@ -9,9 +9,9 @@ type alias Response x =
     Result x String
 
 
-type alias API x =
-    { listThings : ListThingInput -> List Thing
-    , thing : ShowThingInput -> Maybe Thing
+type alias API x a b =
+    { listThings : ListThingInput -> List a
+    , thing : ShowThingInput -> Maybe b
     , createThing : CreateThingInput -> Result x Thing
     , updateThing : UpdateThingInput -> Result x Thing
     , deleteThing : DeleteThingInput -> Result x ()

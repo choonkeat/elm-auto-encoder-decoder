@@ -26,7 +26,7 @@ import {parentModuleName} exposing (..)
 -- API IMPORTS
 
 
-import Platform exposing (Task)
+import Task exposing (Task)
 import Http
 
 
@@ -816,7 +816,8 @@ sourceFromCustomTypeConstructor ct =
             "(" ++ sourceFromCustomTypeConstructor ct1 ++ ", " ++ sourceFromCustomTypeConstructor ct2 ++ ", " ++ sourceFromCustomTypeConstructor ct3 ++ ")"
 
         Function ct1 ct2 ->
-            "(" ++ sourceFromCustomTypeConstructor ct1 ++ " -> " ++ sourceFromCustomTypeConstructor ct2 ++ ")"
+            -- no parenthesis; allow currying to take place
+            sourceFromCustomTypeConstructor ct1 ++ " -> " ++ sourceFromCustomTypeConstructor ct2
 
 
 
@@ -964,8 +965,8 @@ clientMsgFieldPair pair =
             []
 
 
-serverMsgType : TypeName -> List FieldPair -> String
-serverMsgType (TypeName tname params) fields =
+serverMsgTypeName : TypeName -> List FieldPair -> String
+serverMsgTypeName (TypeName tname params) fields =
     let
         effectiveTypes =
             List.foldl (\pair acc -> List.append (serverMsgFieldPair pair) acc) [] fields
@@ -973,18 +974,24 @@ serverMsgType (TypeName tname params) fields =
         effectiveParam =
             params
                 |> List.filter (\x -> List.any (containsTypeParam x) effectiveTypes)
+    in
+    "ServerMsg"
+        :: effectiveParam
+        |> String.join " "
 
-        typealiasName =
-            "ServerMsg"
-                :: effectiveParam
-                |> String.join " "
+
+serverMsgType : TypeName -> List FieldPair -> String
+serverMsgType (TypeName tname params) fields =
+    let
+        effectiveTypes =
+            List.foldl (\pair acc -> List.append (serverMsgFieldPair pair) acc) [] fields
 
         constructors =
             effectiveTypes
                 |> List.map sourceFromCustomTypeConstructor
                 |> List.map (String.dropLeft 1 >> String.dropRight 1)
     in
-    "type " ++ typealiasName ++ "\n    = " ++ String.join "\n    | " constructors
+    "type " ++ serverMsgTypeName (TypeName tname params) fields ++ "\n    = " ++ String.join "\n    | " constructors
 
 
 clientMsgType : TypeName -> List FieldPair -> String
@@ -1016,7 +1023,129 @@ clientMsgType (TypeName tname params) fields =
 
 httpServerAPIFor : String -> TypeName -> List FieldPair -> String
 httpServerAPIFor modulePrefix (TypeName tname params) fields =
-    "-- httpServerAPIFor"
+    let
+        paramsWithContext =
+            "headerContext" :: "serverState" :: params
+
+        newFieldPairs =
+            String.join "\n    , " (List.map (httpServerFieldPair >> sourceFromFieldPair) fields)
+
+        typealiasName =
+            String.join " " ("HttpServerAPI" :: paramsWithContext)
+
+        typealias =
+            "type alias "
+                ++ typealiasName
+                ++ " =\n    { {fieldPairs}\n    }"
+                |> String.replace "{fieldPairs}" newFieldPairs
+
+        serverMsg =
+            serverMsgTypeName (TypeName tname params) fields
+
+        typeSig =
+            List.append
+                (List.map (\word -> "(Json.Decode.Decoder " ++ word ++ ")") paramsWithContext)
+                [ typealiasName, "Json.Decode.Value", "String", "String", "serverState", "Maybe (serverState, Cmd (" ++ serverMsg ++ "))" ]
+                |> String.join " -> "
+                |> (\s -> typealias ++ "\n\n\nrouteHttpServerAPI : " ++ s)
+
+        lhs =
+            List.append
+                ("routeHttpServerAPI" :: List.map (\word -> "arg" ++ word) paramsWithContext)
+                [ "router", "headerValue", "requestBody", "requestPath", "serverState" ]
+                |> String.join " "
+
+        rhs =
+            "case (Json.Decode.decodeValue argheaderContext headerValue, requestPath) of\n    "
+                ++ (List.map (httpServerTaskFunc modulePrefix) fields
+                        |> String.join "\n\n    "
+                   )
+                ++ "\n\n    _ -> Nothing"
+    in
+    typeSig ++ "\n" ++ lhs ++ " =\n    " ++ rhs
+
+
+taskForCustomTypeConstructor : CustomTypeConstructor -> CustomTypeConstructor
+taskForCustomTypeConstructor ct =
+    -- CustomTypeConstructor (TitleCaseDotPhrase "Task")
+    --     (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Error") [] :: [ ct ])
+    case ct of
+        CustomTypeConstructor (TitleCaseDotPhrase "Result") list ->
+            CustomTypeConstructor (TitleCaseDotPhrase "Task") list
+
+        _ ->
+            CustomTypeConstructor (TitleCaseDotPhrase "Task")
+                (CustomTypeConstructor (TitleCaseDotPhrase "Never") [] :: [ ct ])
+
+
+httpServerFieldPair : FieldPair -> FieldPair
+httpServerFieldPair pair =
+    case pair of
+        CustomField fname (Function input output) ->
+            let
+                newInput =
+                    Function
+                        (ConstructorTypeParam "headerContext")
+                        (Function (ConstructorTypeParam "serverState") input)
+
+                newOutput =
+                    Tuple2 (ConstructorTypeParam "serverState") (taskForCustomTypeConstructor output)
+            in
+            CustomField fname (Function newInput newOutput)
+
+        _ ->
+            pair
+
+
+returnTypeOf : CustomTypeConstructor -> CustomTypeConstructor
+returnTypeOf ct =
+    case ct of
+        Function input output ->
+            returnTypeOf output
+
+        _ ->
+            ct
+
+
+httpServerTaskFunc : String -> FieldPair -> String
+httpServerTaskFunc modulePrefix pair =
+    case pair of
+        CustomField (FieldName fname) (Function input output) ->
+            let
+                taskMethod =
+                    case returnTypeOf output of
+                        CustomTypeConstructor (TitleCaseDotPhrase "Result") ((CustomTypeConstructor (TitleCaseDotPhrase "Never") []) :: _) ->
+                            "Task.perform"
+
+                        CustomTypeConstructor (TitleCaseDotPhrase "Result") _ ->
+                            "Task.attempt"
+
+                        _ ->
+                            "Task.perform"
+            in
+            """(Ok ctx, "/{modulePath}{fieldName}") ->
+        case Json.Decode.decodeString {inputDecoder} requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.{fieldName} ctx serverState input
+                in
+                Just (newServerState, {taskMethod} {msg} task)"""
+                |> String.replace "{modulePath}" (String.toLower (String.replace "." "/" modulePrefix))
+                |> String.replace "{fieldName}" fname
+                |> String.replace "{inputDecoder}" (constructorFunctionName "decode" input)
+                |> String.replace "{taskMethod}" taskMethod
+                |> String.replace "{msg}" ("On" ++ upperCaseFirst fname)
+
+        _ ->
+            "-- does not support " ++ Debug.toString pair
+
+
+
+--
 
 
 upperCaseFirst : String -> String

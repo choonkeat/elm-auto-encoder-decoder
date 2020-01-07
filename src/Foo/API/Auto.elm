@@ -16,7 +16,7 @@ import Set
 -- API IMPORTS
 
 
-import Platform exposing (Task)
+import Task exposing (Task)
 import Http
 
 
@@ -196,9 +196,9 @@ decodeResult argx arga =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
-encodeFooAPIAPI : (x -> Json.Encode.Value) -> Foo.API.API x -> Json.Encode.Value
-encodeFooAPIAPI argx value =
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+encodeFooAPIAPI : (x -> Json.Encode.Value) -> (a -> Json.Encode.Value) -> (b -> Json.Encode.Value) -> Foo.API.API x a b -> Json.Encode.Value
+encodeFooAPIAPI argx arga argb value =
     Json.Encode.object
         [ ("listThings", (<function>) value.listThings)
         , ("thing", (<function>) value.thing)
@@ -289,9 +289,9 @@ encodeFooAPIUpdateThingInput value =
 
 
 {- functions cannot be encoded/decoded into json
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
-decodeFooAPIAPI : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.API.API x)
-decodeFooAPIAPI argx =
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.API.API" ["x","a","b"]) [CustomField (FieldName "listThings") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ListThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "List") [ConstructorTypeParam "a"])),CustomField (FieldName "thing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.ShowThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ConstructorTypeParam "b"])),CustomField (FieldName "createThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.CreateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "updateThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.UpdateThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.Thing") []])),CustomField (FieldName "deleteThing") (Function (CustomTypeConstructor (TitleCaseDotPhrase "Foo.API.DeleteThingInput") []) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []]))]) -}
+decodeFooAPIAPI : (Json.Decode.Decoder (x)) -> (Json.Decode.Decoder (a)) -> (Json.Decode.Decoder (b)) -> Json.Decode.Decoder (Foo.API.API x a b)
+decodeFooAPIAPI argx arga argb =
     Json.Decode.succeed Foo.API.API
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "listThings" ] (<function>))
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "thing" ] (<function>))
@@ -380,12 +380,12 @@ decodeFooAPIUpdateThingInput  =
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "name" ] (decodeString))
 
 
-type ServerMsg x
+type ServerMsg x a b
     = OnDeleteThing (Result x (()))
     | OnUpdateThing (Result x (Foo.API.Thing))
     | OnCreateThing (Result x (Foo.API.Thing))
-    | OnThing (Maybe (Foo.API.Thing))
-    | OnListThings (List (Foo.API.Thing))
+    | OnThing (Maybe b)
+    | OnListThings (List a)
 
 
 type ClientMsg
@@ -396,24 +396,24 @@ type ClientMsg
     | DoListThings (Foo.API.ListThingInput)
 
 
-type alias HttpClientAPI x =
-    { listThings : ((Foo.API.ListThingInput) -> (Task (Http.Error) (List (Foo.API.Thing))))
-    , thing : ((Foo.API.ShowThingInput) -> (Task (Http.Error) (Maybe (Foo.API.Thing))))
-    , createThing : ((Foo.API.CreateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
-    , updateThing : ((Foo.API.UpdateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing))))
-    , deleteThing : ((Foo.API.DeleteThingInput) -> (Task (Http.Error) (Result x (()))))
+type alias HttpClientAPI x a b =
+    { listThings : (Foo.API.ListThingInput) -> (Task (Http.Error) (List a))
+    , thing : (Foo.API.ShowThingInput) -> (Task (Http.Error) (Maybe b))
+    , createThing : (Foo.API.CreateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing)))
+    , updateThing : (Foo.API.UpdateThingInput) -> (Task (Http.Error) (Result x (Foo.API.Thing)))
+    , deleteThing : (Foo.API.DeleteThingInput) -> (Task (Http.Error) (Result x (())))
     }
 
 
-httpClient : (Json.Decode.Decoder x) -> HttpClientAPI x
-httpClient argx =
+httpClient : (Json.Decode.Decoder x) -> (Json.Decode.Decoder a) -> (Json.Decode.Decoder b) -> HttpClientAPI x a b
+httpClient argx arga argb =
     { listThings = \input ->
         Http.task
             { method = "POST"
             , headers = []
             , url = "/foo/api/listThings"
             , body = Http.jsonBody ((encodeFooAPIListThingInput) input)
-            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeList (decodeFooAPIThing)))
+            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeList (arga)))
             , timeout = Just 60000
             }
     , thing = \input ->
@@ -422,7 +422,7 @@ httpClient argx =
             , headers = []
             , url = "/foo/api/thing"
             , body = Http.jsonBody ((encodeFooAPIShowThingInput) input)
-            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeMaybe (decodeFooAPIThing)))
+            , resolver = Http.stringResolver (httpJsonBodyResolver (decodeMaybe (argb)))
             , timeout = Just 60000
             }
     , createThing = \input ->
@@ -455,4 +455,76 @@ httpClient argx =
     }
 
 
--- httpServerAPIFor
+type alias HttpServerAPI headerContext serverState x a b =
+    { listThings : headerContext -> serverState -> (Foo.API.ListThingInput) -> (serverState, (Task (Never) (List a)))
+    , thing : headerContext -> serverState -> (Foo.API.ShowThingInput) -> (serverState, (Task (Never) (Maybe b)))
+    , createThing : headerContext -> serverState -> (Foo.API.CreateThingInput) -> (serverState, (Task x (Foo.API.Thing)))
+    , updateThing : headerContext -> serverState -> (Foo.API.UpdateThingInput) -> (serverState, (Task x (Foo.API.Thing)))
+    , deleteThing : headerContext -> serverState -> (Foo.API.DeleteThingInput) -> (serverState, (Task x (())))
+    }
+
+
+routeHttpServerAPI : (Json.Decode.Decoder headerContext) -> (Json.Decode.Decoder serverState) -> (Json.Decode.Decoder x) -> (Json.Decode.Decoder a) -> (Json.Decode.Decoder b) -> HttpServerAPI headerContext serverState x a b -> Json.Decode.Value -> String -> String -> serverState -> Maybe (serverState, Cmd (ServerMsg x a b))
+routeHttpServerAPI argheaderContext argserverState argx arga argb router headerValue requestBody requestPath serverState =
+    case (Json.Decode.decodeValue argheaderContext headerValue, requestPath) of
+    (Ok ctx, "/foo/api/listThings") ->
+        case Json.Decode.decodeString (decodeFooAPIListThingInput) requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.listThings ctx serverState input
+                in
+                Just (newServerState, Task.perform OnListThings task)
+
+    (Ok ctx, "/foo/api/thing") ->
+        case Json.Decode.decodeString (decodeFooAPIShowThingInput) requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.thing ctx serverState input
+                in
+                Just (newServerState, Task.perform OnThing task)
+
+    (Ok ctx, "/foo/api/createThing") ->
+        case Json.Decode.decodeString (decodeFooAPICreateThingInput) requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.createThing ctx serverState input
+                in
+                Just (newServerState, Task.attempt OnCreateThing task)
+
+    (Ok ctx, "/foo/api/updateThing") ->
+        case Json.Decode.decodeString (decodeFooAPIUpdateThingInput) requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.updateThing ctx serverState input
+                in
+                Just (newServerState, Task.attempt OnUpdateThing task)
+
+    (Ok ctx, "/foo/api/deleteThing") ->
+        case Json.Decode.decodeString (decodeFooAPIDeleteThingInput) requestBody of
+            Err err ->
+                Nothing
+
+            Ok input ->
+                let
+                    (newServerState, task) =
+                        router.deleteThing ctx serverState input
+                in
+                Just (newServerState, Task.attempt OnDeleteThing task)
+
+    _ -> Nothing

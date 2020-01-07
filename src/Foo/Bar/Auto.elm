@@ -17,7 +17,7 @@ import Set
 -- API IMPORTS
 
 
-import Platform exposing (Task)
+import Task exposing (Task)
 import Http
 
 
