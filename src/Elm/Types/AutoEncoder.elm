@@ -1076,23 +1076,23 @@ httpServerAPIFor modulePrefix (TypeName tname params) fields =
 
         typeSig =
             List.append
-                (List.map (\word -> "(Json.Decode.Decoder " ++ word ++ ")") paramsWithContext)
-                [ typealiasName, "Json.Decode.Value", "String", "String", "serverState", "Maybe (serverState, Cmd (" ++ serverMsg ++ "))" ]
+                (List.map (\word -> "(Json.Decode.Decoder " ++ word ++ ")") params)
+                [ typealiasName, "String", "headerContext", "String", "serverState", "Maybe (serverState, Cmd (" ++ serverMsg ++ "))" ]
                 |> String.join " -> "
                 |> (\s -> typealias ++ "\n\n\nrouteHttpServerAPI : " ++ s)
 
         lhs =
             List.append
-                ("routeHttpServerAPI" :: List.map (\word -> "arg" ++ word) paramsWithContext)
-                [ "router", "headerValue", "requestBody", "requestPath", "serverState" ]
+                ("routeHttpServerAPI" :: List.map (\word -> "arg" ++ word) params)
+                [ "router", "requestPath", "ctx", "requestBody", "serverState" ]
                 |> String.join " "
 
         rhs =
-            "case (Json.Decode.decodeValue argheaderContext headerValue, requestPath) of\n    "
+            "case requestPath of\n        "
                 ++ (List.map (httpServerTaskFunc modulePrefix) fields
-                        |> String.join "\n\n    "
+                        |> String.join "\n\n        "
                    )
-                ++ "\n\n    _ -> Nothing"
+                ++ "\n\n        _ -> Nothing"
     in
     typeSig ++ "\n" ++ lhs ++ " =\n    " ++ rhs
 
@@ -1155,17 +1155,10 @@ httpServerTaskFunc modulePrefix pair =
                         _ ->
                             "Task.perform"
             in
-            """(Ok ctx, "/{modulePath}{fieldName}") ->
-        case Json.Decode.decodeString {inputDecoder} requestBody of
-            Err err ->
-                Nothing
-
-            Ok input ->
-                let
-                    (newServerState, task) =
-                        router.{fieldName} ctx serverState input
-                in
-                Just (newServerState, {taskMethod} {msg} task)"""
+            """"/{modulePath}{fieldName}" ->
+            Json.Decode.decodeString {inputDecoder} requestBody
+                |> Result.map (router.{fieldName} ctx serverState >> Tuple.mapSecond ({taskMethod} {msg}))
+                |> Result.toMaybe"""
                 |> String.replace "{modulePath}" (String.toLower (String.replace "." "/" modulePrefix))
                 |> String.replace "{fieldName}" fname
                 |> String.replace "{inputDecoder}" (constructorFunctionName "decode" input)

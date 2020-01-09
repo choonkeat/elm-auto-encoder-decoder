@@ -9,14 +9,14 @@ type alias Response x =
     Result x String
 
 
-type alias API x a b =
-    { listThings : ListThingInput -> List a
-    , thing : ShowThingInput -> Maybe b
-    , createThing : CreateThingInput -> Result x Thing
-    , updateThing : UpdateThingInput -> Result x Thing
+type alias API =
+    { listThings : ListThingInput -> List Thing
+    , thing : ShowThingInput -> Maybe Thing
+    , createThing : CreateThingInput -> Result String Thing
+    , updateThing : UpdateThingInput -> Result String Thing
 
     -- bug with `, deleteThing : DeleteThingInput -> Result x ()`
-    , deleteThing : DeleteThingInput -> Acknowledgement x
+    , deleteThing : DeleteThingInput -> Acknowledgement String
     }
 
 
