@@ -86,6 +86,7 @@ type alias Payload =
     { -- title : { h1 : String, h2 : String }
       title : String
     , author : Person
+    , comments : Maybe String
     }
 
 

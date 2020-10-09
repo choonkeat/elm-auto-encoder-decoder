@@ -215,12 +215,13 @@ encodeFooBarOption arga value =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") [])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []])]) -}
 encodeFooBarPayload : Foo.Bar.Payload -> Json.Encode.Value
 encodeFooBarPayload value =
     Json.Encode.object
         [ ("title", (encodeString) value.title)
         , ("author", (encodeFooBarPerson) value.author)
+        , ("comments", (encodeMaybe (encodeString)) value.comments)
         ]
 
 
@@ -301,12 +302,13 @@ decodeFooBarOption arga =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") [])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []])]) -}
 decodeFooBarPayload : Json.Decode.Decoder (Foo.Bar.Payload)
 decodeFooBarPayload  =
     Json.Decode.succeed Foo.Bar.Payload
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "title" ] (decodeString))
         |> Json.Decode.Pipeline.custom (Json.Decode.at [ "author" ] (decodeFooBarPerson))
+        |> Json.Decode.Pipeline.custom (Json.Decode.oneOf [Json.Decode.at [ "comments" ] (decodeMaybe (decodeString)), Json.Decode.succeed Nothing])
 
 
 

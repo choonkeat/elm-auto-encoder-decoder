@@ -717,6 +717,13 @@ decoderBodyOfFieldPairList variable fieldPairList =
 decoderBodyOfFieldPair : Int -> FieldPair -> String
 decoderBodyOfFieldPair index fieldPair =
     case fieldPair of
+        CustomField (FieldName fname) ((CustomTypeConstructor (TitleCaseDotPhrase "Maybe") list) as ct) ->
+            "Json.Decode.Pipeline.custom (Json.Decode.oneOf [Json.Decode.at [ "
+                ++ jsonString fname
+                ++ " ] "
+                ++ decoderSourceFromCustomTypeConstructor False index ct
+                ++ ", Json.Decode.succeed Nothing])"
+
         CustomField (FieldName fname) ct ->
             "Json.Decode.Pipeline.custom (Json.Decode.at [ "
                 ++ jsonString fname
