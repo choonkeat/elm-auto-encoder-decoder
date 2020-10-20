@@ -7,7 +7,6 @@ module Foo.Bar.Auto exposing (..)
 import Foo.Bar exposing (..)
 import Dict
 import Json.Decode
-import Json.Decode.Pipeline
 import Json.Encode
 import Main
 import Platform
@@ -142,7 +141,7 @@ decodeMaybe arga =
             (\word ->
                 case word of
                     "Nothing" -> (Json.Decode.succeed Nothing)
-                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
+                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Maybe: " ++ word)
             )
                  
@@ -156,8 +155,8 @@ decodeResult argx arga =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (argx))))
-                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
+                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (argx))))
+                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Result: " ++ word)
             )
                  
@@ -256,7 +255,7 @@ decodeFooBarHello argx =
             (\word ->
                 case word of
                     "Foo.Bar.Hello" -> (Json.Decode.succeed Foo.Bar.Hello)
-                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (decodeString))) |> (Json.Decode.Pipeline.custom (Json.Decode.index 2 (decodeResult (argx) (decodeMaybe (decodeString))))))
+                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeString))) |> (Json.Decode.map2 (|>) (Json.Decode.index 2 (decodeResult (argx) (decodeMaybe (decodeString))))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Hello: " ++ word)
             )
                  
@@ -279,7 +278,7 @@ decodeFooBarMsg  =
             (\word ->
                 case word of
                     "Foo.Bar.Noop" -> (Json.Decode.succeed Foo.Bar.Noop)
-                    "Foo.Bar.Changes" -> (Json.Decode.succeed Foo.Bar.Changes |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (<function>))))
+                    "Foo.Bar.Changes" -> (Json.Decode.succeed Foo.Bar.Changes |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (<function>))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Msg: " ++ word)
             )
                  
@@ -295,7 +294,7 @@ decodeFooBarOption arga =
             (\word ->
                 case word of
                     "Foo.Bar.None" -> (Json.Decode.succeed Foo.Bar.None)
-                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
+                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
             )
                  
@@ -306,9 +305,9 @@ decodeFooBarOption arga =
 decodeFooBarPayload : Json.Decode.Decoder (Foo.Bar.Payload)
 decodeFooBarPayload  =
     Json.Decode.succeed Foo.Bar.Payload
-        |> Json.Decode.Pipeline.custom (Json.Decode.at [ "title" ] (decodeString))
-        |> Json.Decode.Pipeline.custom (Json.Decode.at [ "author" ] (decodeFooBarPerson))
-        |> Json.Decode.Pipeline.custom (Json.Decode.oneOf [Json.Decode.at [ "comments" ] (decodeMaybe (decodeString)), Json.Decode.succeed Nothing])
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "title" ] (decodeString))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "author" ] (decodeFooBarPerson))
+        |> Json.Decode.map2 (|>) (Json.Decode.oneOf [Json.Decode.at [ "comments" ] (decodeMaybe (decodeString)), Json.Decode.succeed Nothing])
 
 
 
@@ -316,5 +315,5 @@ decodeFooBarPayload  =
 decodeFooBarPerson : Json.Decode.Decoder (Foo.Bar.Person)
 decodeFooBarPerson  =
     Json.Decode.succeed Foo.Bar.Person
-        |> Json.Decode.Pipeline.custom (Json.Decode.at [ "name" ] (decodeString))
-        |> Json.Decode.Pipeline.custom (Json.Decode.at [ "age" ] (decodeInt))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "name" ] (decodeString))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "age" ] (decodeInt))

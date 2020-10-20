@@ -210,7 +210,6 @@ produceSourceCode prelude file =
                 (Set.fromList
                     [ "Json.Encode"
                     , "Json.Decode"
-                    , "Json.Decode.Pipeline"
                     , "Set"
                     ]
                 )
@@ -694,7 +693,7 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
                     "<function>"
     in
     if pipelining then
-        "(Json.Decode.Pipeline.custom (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ str ++ ")))"
+        "(Json.Decode.map2 (|>) (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ str ++ ")))"
 
     else
         "(" ++ str ++ ")"
@@ -718,21 +717,21 @@ decoderBodyOfFieldPair : Int -> FieldPair -> String
 decoderBodyOfFieldPair index fieldPair =
     case fieldPair of
         CustomField (FieldName fname) ((CustomTypeConstructor (TitleCaseDotPhrase "Maybe") list) as ct) ->
-            "Json.Decode.Pipeline.custom (Json.Decode.oneOf [Json.Decode.at [ "
+            "Json.Decode.map2 (|>) (Json.Decode.oneOf [Json.Decode.at [ "
                 ++ jsonString fname
                 ++ " ] "
                 ++ decoderSourceFromCustomTypeConstructor False index ct
                 ++ ", Json.Decode.succeed Nothing])"
 
         CustomField (FieldName fname) ct ->
-            "Json.Decode.Pipeline.custom (Json.Decode.at [ "
+            "Json.Decode.map2 (|>) (Json.Decode.at [ "
                 ++ jsonString fname
                 ++ " ] "
                 ++ decoderSourceFromCustomTypeConstructor False index ct
                 ++ ")"
 
         NestedField (FieldName fname) fieldPairList ->
-            "Json.Decode.Pipeline.custom (Json.Decode.at [ "
+            "Json.Decode.map2 (|>) (Json.Decode.at [ "
                 ++ jsonString fname
                 ++ " ] "
                 ++ "("
