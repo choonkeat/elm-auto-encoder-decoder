@@ -183,17 +183,13 @@ importDefinition =
         |= Parser.oneOf
             [ Parser.backtrackable <|
                 Parser.succeed Just
-                    |. Parser.symbol " "
-                    |. Parser.keyword "as"
-                    |. Parser.symbol " "
+                    |. Parser.symbol " as "
                     |= titleCaseWord
             , Parser.succeed Nothing
             ]
         |= Parser.oneOf
             [ Parser.succeed identity
-                |. Parser.symbol " "
-                |. Parser.keyword "exposing"
-                |. Parser.symbol " "
+                |. Parser.symbol " exposing "
                 |= namedExports
             , Parser.succeed (ExposingOnly [])
             ]
@@ -248,10 +244,16 @@ constructorTypeParam =
     import Parser
     import Elm.Types exposing (..)
 
+    aString : CustomTypeConstructor
+    aString =
+        CustomTypeConstructor (TitleCaseDotPhrase "String") []
+
+    Parser.run nestedTypeName "String"
+    --> Ok aString
+
     maybeString : CustomTypeConstructor
     maybeString =
-        CustomTypeConstructor (TitleCaseDotPhrase "Maybe")
-            [ CustomTypeConstructor (TitleCaseDotPhrase "String") [] ]
+        CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [ aString ]
 
     Parser.run nestedTypeName "Maybe String"
     --> Ok maybeString
@@ -290,7 +292,11 @@ nestedTypeName : Parser.Parser CustomTypeConstructor
 nestedTypeName =
     Parser.succeed CustomTypeConstructor
         |= titleCaseDotPhrase
-        |= mustSpaceOrNewline nonEmptyNestedTypeTokens []
+        |. Parser.oneOf
+            [ Parser.symbol " "
+            , Parser.succeed ()
+            ]
+        |= restOfCustomTypeConstructor
         |> Parser.map functionFromCustomTypeConstructor
 
 
@@ -356,10 +362,19 @@ anyCustomTypeConstructor =
         ]
 
 
-nonEmptyNestedTypeTokens : Parser.Parser (List CustomTypeConstructor)
-nonEmptyNestedTypeTokens =
+{-|
+
+    import Parser
+    import Elm.Types exposing (..)
+
+    Parser.run restOfCustomTypeConstructor "-> Msg -> Model"
+    --> Ok [ConstructorTypeParam "->",CustomTypeConstructor (TitleCaseDotPhrase "Msg") [],ConstructorTypeParam "->",CustomTypeConstructor (TitleCaseDotPhrase "Model") []]
+
+-}
+restOfCustomTypeConstructor : Parser.Parser (List CustomTypeConstructor)
+restOfCustomTypeConstructor =
     let
-        nonEmptyNestedTypeTokensHelp revList =
+        restOfCustomTypeConstructorHelp revList =
             Parser.oneOf
                 [ Parser.succeed (Parser.Loop (functionArrow :: revList))
                     |. Parser.symbol "-> "
@@ -370,8 +385,7 @@ nonEmptyNestedTypeTokens =
                     |> Parser.map (\_ -> Parser.Done (List.reverse revList))
                 ]
     in
-    Parser.loop [] nonEmptyNestedTypeTokensHelp
-        |> Parser.andThen problemIfEmpty
+    Parser.loop [] restOfCustomTypeConstructorHelp
 
 
 {-| Refers to `a, b` of `Coordinate (a, b)`
@@ -385,8 +399,7 @@ tupleParams =
                     |= anyCustomTypeConstructor
                     |. Parser.oneOf
                         [ Parser.succeed ()
-                            |. Parser.symbol ","
-                            |. Parser.symbol " "
+                            |. Parser.symbol ", "
                         , Parser.succeed ()
                         ]
                 , Parser.succeed ()
@@ -550,15 +563,11 @@ fieldPair =
         [ Parser.backtrackable <|
             Parser.succeed CustomField
                 |= fieldName
-                |. Parser.symbol " "
-                |. Parser.symbol ":"
-                |. Parser.symbol " "
+                |. Parser.symbol " : "
                 |= nestedTypeName
         , Parser.succeed NestedField
             |= fieldName
-            |. Parser.symbol " "
-            |. Parser.symbol ":"
-            |. Parser.symbol " "
+            |. Parser.symbol " : "
             |= Parser.lazy (\() -> fieldPairList)
         ]
 
@@ -573,6 +582,9 @@ fieldPair =
         , email : Email
     }""")
     --> Ok [ CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []), CustomField (FieldName "email") (CustomTypeConstructor (TitleCaseDotPhrase "Email") []) ]
+
+    Parser.run fieldPairList ("""{ userID : String }""")
+    --> Ok [ CustomField (FieldName "userID") (CustomTypeConstructor (TitleCaseDotPhrase "String") []) ]
 
 -}
 fieldPairList : Parser.Parser (List FieldPair)
@@ -989,24 +1001,6 @@ comments =
                 , Parser.multiComment "{-" "-}" Parser.Nestable
                 , Parser.spaces
                 ]
-
-
-mustSpaceOrNewline : Parser.Parser a -> a -> Parser.Parser a
-mustSpaceOrNewline parserAfterSpace defaultValue =
-    Parser.oneOf
-        [ Parser.succeed identity
-            |. Parser.symbol " "
-            |= parserAfterSpace
-        , Parser.succeed defaultValue
-            |. Parser.oneOf
-                [ Parser.chompIf (\c -> c == '\n' || c == '\u{000D}')
-                , Parser.end
-                ]
-        ]
-
-
-
---
 
 
 isNoneOf : List Char -> Char -> Bool
