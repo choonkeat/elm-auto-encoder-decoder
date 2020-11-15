@@ -10,7 +10,46 @@ npx elm-auto-encoder-decoder src/Types.elm
 
 any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
 
-# Intention
+### Don't be alarmed with "I cannot find ... variable" compiler errors
+
+If your `src/Types.elm` contain types imported from other modules, e.g. `Time.Posix`
+
+```elm
+type alias User = { name : String, createdAt : Time.Posix }
+```
+
+the generated code may not compile
+
+```
+-- NAMING ERROR --------------------------------------------- src/Types/Auto.elm
+
+I cannot find a `decodeTimePosix` variable:
+
+248|         |> Json.Decode.map2 (|>) (Json.Decode.at [ "createdAt" ] (decodeTimePosix))
+                                                                       ^^^^^^^^^^^^^^^
+-- NAMING ERROR --------------------------------------------- src/Types/Auto.elm
+
+I cannot find a `encodeTimePosix` variable:
+
+197|         , ("createdAt", (encodeTimePosix) value.createdAt)
+                              ^^^^^^^^^^^^^^^
+```
+
+you just have to implement and expose the functions in your `src/Types.elm`, for example:
+
+``` elm
+decodeTimePosix : Json.Decode.Decoder Time.Posix
+decodeTimePosix =
+    Json.Decode.int
+        |> Json.Decode.map Time.millisToPosix
+
+
+encodeTimePosix : Time.Posix -> Json.Encode.Value
+encodeTimePosix t =
+    Json.Encode.int (Time.posixToMillis t)
+```
+
+# How it works
 
 Given the content of a `Foo.Bar` Elm module
 
