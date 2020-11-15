@@ -6,8 +6,11 @@ const path = require('path')
 global.XMLHttpRequest = require('xhr2')
 const { Elm } = require('./build/Main.js')
 const app = Elm.Main.init({ flags: {} })
+const watching = (process.env.WATCHING !== 'false')
 
 var throttle = {}
+
+if (app.ports.exit && !watching) app.ports.exit.subscribe(process.exit)
 
 if (app.ports.writeFile) {
   app.ports.writeFile.subscribe(({ filename, encoding, data }) => {
@@ -34,8 +37,7 @@ process.argv.slice(2).forEach((filepath) => {
   fs.stat(filepath, function (err, stats) {
     if (err) throw err
     readAndWrite(filepath, 'utf8')
-    if (process.env.WATCHING === 'false') return // the end
-    if (!app.ports.writeFile) return             // the end
+    if (!watching) return // the end
 
     console.log('watching', filepath, '...')
     var dirname = stats.isDirectory() ? filepath : path.dirname(filepath)

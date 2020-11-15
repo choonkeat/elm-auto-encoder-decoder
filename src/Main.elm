@@ -41,48 +41,47 @@ update msg model =
         OnFileRead (Ok event) ->
             case ( stdlib, Parser.run Elm.Types.Parser.fileContent event.data ) of
                 ( Ok prelude, Ok elmFile ) ->
-                    let
-                        content =
-                            Elm.Types.AutoEncoder.produceSourceCode prelude elmFile
-
-                        targetFilename =
-                            String.replace ".elm" "/Auto.elm" event.filename
-
-                        cmd =
-                            writeUTF8
-                                { filename = targetFilename
-                                , content = content
-                                }
-                    in
-                    ( model, cmd )
+                    ( model
+                    , writeUTF8
+                        { filename = String.replace ".elm" "/Auto.elm" event.filename
+                        , content = Elm.Types.AutoEncoder.produceSourceCode prelude elmFile
+                        }
+                    )
 
                 ( _, Err err ) ->
                     let
                         _ =
                             Debug.log "Elm.Types.Parser.fileContent" ( err, event.filename )
                     in
-                    ( model, Cmd.none )
+                    ( model, exit 1 )
 
                 ( Err err, _ ) ->
                     let
                         _ =
                             Debug.log "stdlib" err
                     in
-                    ( model, Cmd.none )
+                    ( model, exit 1 )
 
         OnFileRead (Err err) ->
             let
                 _ =
                     Debug.log "read" err
             in
-            ( model, Cmd.none )
+            ( model, exit 1 )
 
-        OnFileWritten result ->
+        OnFileWritten (Ok { filename }) ->
             let
                 _ =
-                    Debug.log "wrote" result
+                    Debug.log "wrote" filename
             in
-            ( model, Cmd.none )
+            ( model, exit 0 )
+
+        OnFileWritten (Err err) ->
+            let
+                _ =
+                    Debug.log "wrote" err
+            in
+            ( model, exit 1 )
 
 
 subscriptions : Model -> Sub Msg
@@ -219,3 +218,6 @@ port onFileContent : (Json.Encode.Value -> msg) -> Sub msg
 
 
 port onFileWritten : (Json.Encode.Value -> msg) -> Sub msg
+
+
+port exit : Int -> Cmd msg
