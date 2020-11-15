@@ -38,7 +38,7 @@ module Foo.Bar exposing (..)
 
     payloadValue : Payload
     payloadValue =
-        { title = "Hello", author = { name = "Foo", age = 42 } }
+        { title = "Hello", author = { name = "Foo", age = 42 }, comments = Just "lgtm 👍" }
 
     encodeFooBarPayload payloadValue
         |> Json.Encode.encode 0
