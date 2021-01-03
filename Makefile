@@ -9,6 +9,9 @@ build: build/Main.js
 build/Main.js: $(shell find src -iname '*.elm')
 	elm make src/Main.elm --output build/Main.js
 
-test:
+test: build
 	WATCHING=false node index.js src/Foo/Bar.elm
 	elm-verify-examples && elm-test
+
+watch:
+	while fswatch --one-event --recursive src; do make test; done

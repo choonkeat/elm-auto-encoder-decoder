@@ -152,7 +152,7 @@ moduleDefinition =
         |= titleCaseDotPhrase
         |. Parser.symbol " "
         |. Parser.keyword "exposing"
-        |. Parser.symbol " "
+        |. Parser.spaces
         |= namedExports
 
 

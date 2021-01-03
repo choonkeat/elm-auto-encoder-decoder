@@ -1,6 +1,11 @@
-module Foo.Bar exposing (..)
+module Foo.Bar exposing
+    ( Choice, Option(..)
+    , Acknowledgement, Hello(..), Lookup, Payload, Person
+    )
 
-{-|
+{-| add docs to make elm-format break up module expose into different lines
+
+@docs Choice, Option
 
     import Json.Encode
     import Json.Decode
