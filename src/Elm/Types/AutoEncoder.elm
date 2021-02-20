@@ -20,6 +20,7 @@ import {parentModuleName} exposing (..)
 {imports}
 
 
+
 -- HARDCODE
 
 
@@ -63,7 +64,28 @@ encode_Unit value =
     Json.Encode.list identity [ encodeString "" ]
 
 
+encodeJsonDecodeValue : Json.Decode.Value -> Json.Encode.Value
+encodeJsonDecodeValue a =
+    a
+
+
+encodeJsonEncodeValue : Json.Encode.Value -> Json.Encode.Value
+encodeJsonEncodeValue a =
+    a
+
+
+
 --
+
+
+decodeJsonDecodeValue : Json.Decode.Decoder Json.Decode.Value
+decodeJsonDecodeValue =
+    Json.Decode.value
+
+
+decodeJsonEncodeValue : Json.Decode.Decoder Json.Decode.Value
+decodeJsonEncodeValue =
+    Json.Decode.value
 
 
 decodeString : Json.Decode.Decoder String
