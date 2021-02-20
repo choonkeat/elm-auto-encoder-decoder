@@ -543,9 +543,14 @@ fieldName : Parser.Parser FieldName
 fieldName =
     Parser.succeed ()
         |. Parser.chompIf Char.isLower
-        |. Parser.chompWhile Char.isAlphaNum
+        |. Parser.chompWhile isNameCharacter
         |> Parser.getChompedString
         |> Parser.map FieldName
+
+
+isNameCharacter : Char -> Bool
+isNameCharacter c =
+    c == '_' || Char.isAlphaNum c
 
 
 {-|

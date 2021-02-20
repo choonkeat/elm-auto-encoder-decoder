@@ -43,7 +43,12 @@ module Foo.Bar exposing
 
     payloadValue : Payload
     payloadValue =
-        { title = "Hello", author = { name = "Foo", age = 42 }, comments = Just "lgtm 👍" }
+        { title = "Hello"
+        , author_person = { name = "Foo", age = 42 }
+        , comments = Just "lgtm 👍"
+        , blob = Json.Encode.int 42
+        , blob2 = Json.Encode.bool False
+        }
 
     encodeFooBarPayload payloadValue
         |> Json.Encode.encode 0
@@ -64,6 +69,8 @@ module Foo.Bar exposing
 -}
 
 import Dict exposing (Dict)
+import Json.Decode
+import Json.Encode
 import Main exposing (Msg)
 
 
@@ -90,8 +97,10 @@ type alias Person =
 type alias Payload =
     { -- title : { h1 : String, h2 : String }
       title : String
-    , author : Person
+    , author_person : Person
     , comments : Maybe String
+    , blob : Json.Encode.Value
+    , blob2 : Json.Decode.Value
     }
 
 

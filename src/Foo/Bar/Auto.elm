@@ -236,13 +236,15 @@ encodeFooBarOption arga value =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") [])]) -}
 encodeFooBarPayload : Foo.Bar.Payload -> Json.Encode.Value
 encodeFooBarPayload value =
     Json.Encode.object
         [ ("title", (encodeString) value.title)
-        , ("author", (encodeFooBarPerson) value.author)
+        , ("author_person", (encodeFooBarPerson) value.author_person)
         , ("comments", (encodeMaybe (encodeString)) value.comments)
+        , ("blob", (encodeJsonEncodeValue) value.blob)
+        , ("blob2", (encodeJsonDecodeValue) value.blob2)
         ]
 
 
@@ -323,13 +325,15 @@ decodeFooBarOption arga =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") [])]) -}
 decodeFooBarPayload : Json.Decode.Decoder (Foo.Bar.Payload)
 decodeFooBarPayload  =
     Json.Decode.succeed Foo.Bar.Payload
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "title" ] (decodeString))
-        |> Json.Decode.map2 (|>) (Json.Decode.at [ "author" ] (decodeFooBarPerson))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "author_person" ] (decodeFooBarPerson))
         |> Json.Decode.map2 (|>) (Json.Decode.oneOf [Json.Decode.at [ "comments" ] (decodeMaybe (decodeString)), Json.Decode.succeed Nothing])
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "blob" ] (decodeJsonEncodeValue))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "blob2" ] (decodeJsonDecodeValue))
 
 
 
