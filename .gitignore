@@ -1,1 +1,4 @@
 tests/VerifyExamples
+build
+elm-stuff
+node_modules

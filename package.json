@@ -10,10 +10,12 @@
     "test": "tests"
   },
   "dependencies": {
-    "elm-test": "^0.19.1-revision4",
     "xhr2": "^0.2.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "elm-test": "^0.19.1-revision4",
+    "elm-verify-examples": "^5.0.0"
+  },
   "scripts": {
     "test": "elm-verify-examples && elm-test"
   },
