@@ -200,6 +200,15 @@ encodeFooBarChoice value =
 
 
 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Traditional_phrase") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Bespoke_sentence") []], name = TypeName "Foo.Bar.Custom_word" [] } -}
+encodeFooBarCustom_word : Foo.Bar.Custom_word -> Json.Encode.Value
+encodeFooBarCustom_word value =
+    case value of
+        (Foo.Bar.Traditional_phrase) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Traditional_phrase" ])
+        (Foo.Bar.Bespoke_sentence) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Bespoke_sentence" ])
+
+
+
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
 encodeFooBarHello : (x -> Json.Encode.Value) -> Foo.Bar.Hello x -> Json.Encode.Value
 encodeFooBarHello argx value =
@@ -236,7 +245,7 @@ encodeFooBarOption arga value =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") [])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") []),CustomField (FieldName "custom_word") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Custom_word") [])]) -}
 encodeFooBarPayload : Foo.Bar.Payload -> Json.Encode.Value
 encodeFooBarPayload value =
     Json.Encode.object
@@ -245,6 +254,7 @@ encodeFooBarPayload value =
         , ("comments", (encodeMaybe (encodeString)) value.comments)
         , ("blob", (encodeJsonEncodeValue) value.blob)
         , ("blob2", (encodeJsonDecodeValue) value.blob2)
+        , ("custom_word", (encodeFooBarCustom_word) value.custom_word)
         ]
 
 
@@ -268,6 +278,21 @@ decodeFooBarAcknowledgement argx =
 decodeFooBarChoice : Json.Decode.Decoder (Foo.Bar.Choice)
 decodeFooBarChoice  =
     (decodeFooBarOption (decodeBool))
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Traditional_phrase") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Bespoke_sentence") []], name = TypeName "Foo.Bar.Custom_word" [] } -}
+decodeFooBarCustom_word : Json.Decode.Decoder (Foo.Bar.Custom_word)
+decodeFooBarCustom_word  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.Traditional_phrase" -> (Json.Decode.succeed Foo.Bar.Traditional_phrase)
+                    "Foo.Bar.Bespoke_sentence" -> (Json.Decode.succeed Foo.Bar.Bespoke_sentence)
+                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.Custom_word: " ++ word)
+            )
+                 
 
 
 
@@ -325,7 +350,7 @@ decodeFooBarOption arga =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") [])]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.Payload" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") []),CustomField (FieldName "author_person") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Person") []),CustomField (FieldName "comments") (CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]),CustomField (FieldName "blob") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Encode.Value") []),CustomField (FieldName "blob2") (CustomTypeConstructor (TitleCaseDotPhrase "Json.Decode.Value") []),CustomField (FieldName "custom_word") (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Custom_word") [])]) -}
 decodeFooBarPayload : Json.Decode.Decoder (Foo.Bar.Payload)
 decodeFooBarPayload  =
     Json.Decode.succeed Foo.Bar.Payload
@@ -334,6 +359,7 @@ decodeFooBarPayload  =
         |> Json.Decode.map2 (|>) (Json.Decode.oneOf [Json.Decode.at [ "comments" ] (decodeMaybe (decodeString)), Json.Decode.succeed Nothing])
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "blob" ] (decodeJsonEncodeValue))
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "blob2" ] (decodeJsonDecodeValue))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "custom_word" ] (decodeFooBarCustom_word))
 
 
 

@@ -1,6 +1,6 @@
 module Foo.Bar exposing
     ( Choice, Option(..)
-    , Acknowledgement, Hello(..), Lookup, Payload, Person
+    , Acknowledgement, Custom_word(..), Hello(..), Lookup, Payload, Person
     )
 
 {-| add docs to make elm-format break up module expose into different lines
@@ -48,6 +48,7 @@ module Foo.Bar exposing
         , comments = Just "lgtm 👍"
         , blob = Json.Encode.int 42
         , blob2 = Json.Encode.bool False
+        , custom_word = Bespoke_sentence
         }
 
     encodeFooBarPayload payloadValue
@@ -101,7 +102,13 @@ type alias Payload =
     , comments : Maybe String
     , blob : Json.Encode.Value
     , blob2 : Json.Decode.Value
+    , custom_word : Custom_word
     }
+
+
+type Custom_word
+    = Traditional_phrase
+    | Bespoke_sentence
 
 
 type alias Lookup =

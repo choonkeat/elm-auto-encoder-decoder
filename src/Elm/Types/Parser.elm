@@ -21,7 +21,7 @@ import Set exposing (Set)
 titleCaseWord =
     Parser.succeed ()
         |. Parser.chompIf Char.isUpper
-        |. Parser.chompWhile Char.isAlphaNum
+        |. Parser.chompWhile isNameCharacter
         |> Parser.getChompedString
 
 
@@ -914,7 +914,7 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
         ExposingOnly (x :: xs) ->
             let
                 namespaced =
-                    if List.any (not << Char.isAlphaNum) (String.toList x) then
+                    if List.any (not << isNameCharacter) (String.toList x) then
                         -- for infix operators, restore the parenthesis
                         name ++ "." ++ "(" ++ x ++ ")"
 
