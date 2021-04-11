@@ -10,6 +10,80 @@ npx elm-auto-encoder-decoder src/Types.elm
 
 any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
 
+# How it works
+
+An Elm module `Foo.Bar` like below
+
+``` elm
+module Foo.Bar exposing (..)
+
+type alias Choice =
+    Option Bool
+
+
+type Option a
+    = None
+    | Some a
+```
+
+will be encoded and decoded as JSON like
+
+
+```json
+["Foo.Bar.None"]
+["Foo.Bar.Some",true]
+```
+
+by the generated Elm functions in the `Auto` submodule
+
+``` elm
+module Foo.Bar.Auto exposing (..)
+
+import Foo.Bar
+import Json.Decode
+import Json.Decode.Pipeline
+import Json.Encode
+
+-- elided...
+
+encodeFooBarChoice : Foo.Bar.Choice -> Json.Encode.Value
+encodeFooBarChoice value =
+    encodeFooBarOption encodeBool value
+
+
+encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
+encodeFooBarOption arga value =
+    case value of
+        Foo.Bar.None ->
+            Json.Encode.list identity [ encodeString "Foo.Bar.None" ]
+
+        Foo.Bar.Some m0 ->
+            Json.Encode.list identity [ encodeString "Foo.Bar.Some", arga m0 ]
+
+
+decodeFooBarChoice : Json.Decode.Decoder Foo.Bar.Choice
+decodeFooBarChoice =
+    decodeFooBarOption decodeBool
+
+
+decodeFooBarOption : Json.Decode.Decoder a -> Json.Decode.Decoder (Foo.Bar.Option a)
+decodeFooBarOption arga =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.None" ->
+                        Json.Decode.succeed Foo.Bar.None
+
+                    "Foo.Bar.Some" ->
+                        Json.Decode.succeed Foo.Bar.Some |> Json.Decode.map2 (|>) (Json.Decode.index 1 arga)
+
+                    _ ->
+                        Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
+            )
+```
+
+
 ### Don't be alarmed with "I cannot find ... variable" compiler errors
 
 If your `src/Types.elm` contain types imported from other modules, e.g. `Time.Posix`
@@ -18,7 +92,7 @@ If your `src/Types.elm` contain types imported from other modules, e.g. `Time.Po
 type alias User = { name : String, createdAt : Time.Posix }
 ```
 
-the generated code may not compile
+the generated code will likely not compile
 
 ```
 -- NAMING ERROR --------------------------------------------- src/Types/Auto.elm
@@ -35,7 +109,7 @@ I cannot find a `encodeTimePosix` variable:
                               ^^^^^^^^^^^^^^^
 ```
 
-you just have to implement and expose the functions in your `src/Types.elm`, for example:
+**just implement and expose those function names** in your `src/Types.elm`, for example:
 
 ``` elm
 decodeTimePosix : Json.Decode.Decoder Time.Posix
@@ -47,60 +121,4 @@ decodeTimePosix =
 encodeTimePosix : Time.Posix -> Json.Encode.Value
 encodeTimePosix t =
     Json.Encode.int (Time.posixToMillis t)
-```
-
-# How it works
-
-Given the content of a `Foo.Bar` Elm module
-
-``` elm
-module Foo.Bar exposing (..)
-
-type alias Choice =
-    Option Bool
-
-
-type Option a
-    = None
-    | Some a
-```
-
-`Elm.Types.AutoEncoder.produceSourceCode` will produce the Elm functions that encode and decode the types in that file under the `Auto` submodule
-
-``` elm
-module Foo.Bar.Auto exposing (..)
-
-import Foo.Bar
-import Json.Decode
-import Json.Decode.Pipeline
-import Json.Encode
-
-
-encodeFooBarChoice : Foo.Bar.Choice -> Json.Encode.Value
-encodeFooBarChoice value =
-    (encodeFooBarOption (encodeBool)) value
-
-
-decodeFooBarChoice : Json.Decode.Decoder (Foo.Bar.Choice)
-decodeFooBarChoice  =
-    (decodeFooBarOption (decodeBool))
-
-
-encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
-encodeFooBarOption arga value =
-    case value of
-        (Foo.Bar.None) -> (Json.Encode.list identity [ encodeString "Foo.Bar.None" ])
-        (Foo.Bar.Some m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Some", (arga m0) ])
-
-
-decodeFooBarOption : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Foo.Bar.Option a)
-decodeFooBarOption arga =
-    Json.Decode.index 0 Json.Decode.string
-        |> Json.Decode.andThen
-            (\word ->
-                case word of
-                    "Foo.Bar.None" -> (Json.Decode.succeed Foo.Bar.None)
-                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.Pipeline.custom (Json.Decode.index 1 (arga))))
-                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
-            )
 ```
