@@ -1,6 +1,6 @@
 # Parser for Elm types
 
-Enough to generate automatic encoder and decoder
+Enough to generate automatic encoder and decoder for [choonkeat/elm-webapp](https://github.com/choonkeat/elm-webapp#readme) `Client` and `Server` instances to pass `Msg` to and fro.
 
 # Usage
 
