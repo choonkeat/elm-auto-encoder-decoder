@@ -1,4 +1,4 @@
-TARGET_FILES ?= src/Foo/Bar.elm
+TARGET_FILES ?= src/Foo/Bar.elm src/Foo/Baz.elm
 
 run: build
 	node index.js $(TARGET_FILES)

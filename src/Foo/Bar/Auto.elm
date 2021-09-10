@@ -6,6 +6,8 @@ module Foo.Bar.Auto exposing (..)
 
 import Foo.Bar exposing (..)
 import Dict exposing (Dict)
+import Foo.Baz
+import Foo.Baz.Auto exposing (..)
 import Json.Decode
 import Json.Encode
 import Main
@@ -218,10 +220,10 @@ encodeFooBarHello argx value =
 
 
 
-{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Int") []])) -}
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []])) -}
 encodeFooBarLookup : Foo.Bar.Lookup -> Json.Encode.Value
 encodeFooBarLookup value =
-    (encodeDictDict (encodeString) (encodeInt)) value
+    (encodeDictDict (encodeString) (encodeFooBazRecord)) value
 
 
 
@@ -311,10 +313,10 @@ decodeFooBarHello argx =
 
 
 
-{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Int") []])) -}
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []])) -}
 decodeFooBarLookup : Json.Decode.Decoder (Foo.Bar.Lookup)
 decodeFooBarLookup  =
-    (decodeDictDict (decodeString) (decodeInt))
+    (decodeDictDict (decodeString) (decodeFooBazRecord))
 
 
 
