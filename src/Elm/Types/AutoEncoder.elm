@@ -239,7 +239,7 @@ produceSourceCode prelude file =
         sourceHeader =
             templateHeader
                 |> String.replace "{parentModuleName}" parentModuleName
-                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports file.importResolver)
+                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports file.importExposing file.importResolver)
                 |> String.replace "{prelude}" prelude
     in
     sourceHeader
@@ -249,17 +249,36 @@ produceSourceCode prelude file =
         ++ decoderDefinitions file
 
 
-sourceFromImports : String -> Set String -> Dict String String -> String
-sourceFromImports modulePrefix modules dict =
+sourceFromImports : String -> Set String -> Dict String Exposing -> Dict String String -> String
+sourceFromImports modulePrefix modules moduleExposing dict =
     -- |> (\s -> s ++ "\n\n\n{- importResolver: " ++ Json.Encode.encode 2 (Json.Encode.dict identity Json.Encode.string dict) ++ " -}")
+    let
+        withExposing m =
+            Dict.get m moduleExposing
+                |> Maybe.map sourceFromExposing
+                |> Maybe.withDefault ""
+    in
     Set.fromList (Dict.values dict)
         |> Set.map (String.split ".")
         |> Set.map (\list -> String.join "." (List.take (List.length list - 1) list))
         |> Set.filter (\s -> s /= "" && not (String.startsWith modulePrefix s))
         |> Set.union modules
-        |> Set.map (\m -> "import " ++ m)
+        |> Set.map (\m -> "import " ++ m ++ withExposing m)
         |> Set.toList
         |> String.join "\n"
+
+
+sourceFromExposing : Exposing -> String
+sourceFromExposing exposing_ =
+    case exposing_ of
+        ExposingEverything ->
+            " exposing (..)"
+
+        ExposingOnly [] ->
+            ""
+
+        ExposingOnly list ->
+            " exposing (" ++ String.join "," list ++ ")"
 
 
 

@@ -7,6 +7,7 @@ import Set exposing (Set)
 type alias ElmFile =
     { modulePrefix : String
     , imports : Set String -- ["Json.Decode"]
+    , importExposing : Dict String Exposing -- Dict.fromList [("Json.Decode", ExposingEverything)]
     , importResolver : Dict String String -- Dict.fromList [("string", "Json.Encode.string")]
     , knownTypes : Dict String ElmTypeDef -- Dict.fromList [("Json.Encode.Value", ...)]
     , skipTypes : Set String

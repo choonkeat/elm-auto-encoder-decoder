@@ -906,10 +906,17 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
     in
     case exposing_ of
         ExposingEverything ->
-            { file | imports = Set.insert name file.imports, importResolver = importResolverWithMaybeAliasName }
+            { file
+                | imports = Set.insert name file.imports
+                , importExposing = Dict.insert name exposing_ file.importExposing
+                , importResolver = importResolverWithMaybeAliasName
+            }
 
         ExposingOnly [] ->
-            { file | imports = Set.insert name file.imports, importResolver = importResolverWithMaybeAliasName }
+            { file
+                | imports = Set.insert name file.imports
+                , importResolver = importResolverWithMaybeAliasName
+            }
 
         ExposingOnly (x :: xs) ->
             let
@@ -922,7 +929,10 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
                         name ++ "." ++ x
 
                 newFile =
-                    { file | importResolver = Dict.insert x namespaced newImportResolver }
+                    { file
+                        | importResolver = Dict.insert x namespaced newImportResolver
+                        , importExposing = Dict.insert x exposing_ file.importExposing
+                    }
             in
             addImportDef newFile (ImportDef (TitleCaseDotPhrase name) maybeAliasName (ExposingOnly xs))
 
@@ -952,6 +962,7 @@ fileContent =
     Parser.loop
         { modulePrefix = ""
         , imports = Set.empty
+        , importExposing = Dict.empty
         , importResolver =
             Dict.fromList
                 [ -- (givenString, qualifiedString)

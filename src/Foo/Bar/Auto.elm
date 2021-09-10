@@ -5,7 +5,7 @@ module Foo.Bar.Auto exposing (..)
 
 
 import Foo.Bar exposing (..)
-import Dict
+import Dict exposing (Dict)
 import Json.Decode
 import Json.Encode
 import Main
