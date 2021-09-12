@@ -71,7 +71,6 @@ module Foo.Bar exposing
 
 import Dict exposing (Dict)
 import Foo.Baz
-import Foo.Baz.Auto exposing (..)
 import Json.Decode
 import Json.Encode
 import Main exposing (Msg)

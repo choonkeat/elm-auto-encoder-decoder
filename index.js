@@ -29,10 +29,10 @@ if (app.ports.writeFile) {
   })
 }
 
-function readAndWrite (filename, encoding) {
+function readAndWrite (filename, encoding, autoModules) {
   throttle[filename] = (new Date()).getTime()                    // lock to throttle
   fs.readFile(filename, { encoding: encoding }, (err, data) => {
-    app.ports.onFileContent.send({ filename, encoding, extraImport, err, data })
+    app.ports.onFileContent.send({ filename, encoding, extraImport, autoModules, err, data })
     setTimeout(function () { delete throttle[filename] }, 2000)  // remove throttle after 2 seconds
   })
 }
@@ -45,11 +45,13 @@ function innerPath(filepath, resultpath) {
   return innerPath(parts.dir, [parts.name, ...resultpath])
 }
 
+const autoModules = process.argv.slice(2).map((filepath) => innerPath(filepath, []).split(path.sep).join('.'))
+
 process.argv.slice(2).forEach((filepath) => {
   var encoding = 'utf8'
   fs.stat(filepath, function (err, stats) {
     if (err) throw err
-    readAndWrite(filepath, 'utf8')
+    readAndWrite(filepath, 'utf8', autoModules)
     if (!watching) return // the end
 
     console.log('watching', filepath, '...')
@@ -57,7 +59,7 @@ process.argv.slice(2).forEach((filepath) => {
     fs.watch(filepath, { recursive: true }, (eventType, basename) => {
       var filename = path.join(dirname, basename)
       if (throttle[filename]) return
-      readAndWrite(filename, encoding)
+      readAndWrite(filename, encoding, autoModules)
     })
   })
 })
