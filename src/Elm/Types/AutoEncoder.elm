@@ -267,7 +267,6 @@ sourceFromImports modulePrefix modules autoModules moduleExposing dict =
         withAutoModules imported =
             Set.intersect imported autoModules
                 |> Set.map (\s -> s ++ ".Auto")
-                |> Debug.log "import auto"
                 |> Set.union imported
     in
     Set.fromList (Dict.values dict)
