@@ -10,6 +10,14 @@ npx elm-auto-encoder-decoder src/Types.elm
 
 any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
 
+# ENV variable configurations
+
+`GENERATED_SRC` will write `Auto.elm` files to a different directory than the source files, while keeping the directory hierarchy. e.g. `GENERATED_SRC=generated/src`
+
+`WATCHING` when set to `false` will exit after a single run, instead of hanging around waiting for file changes. e.g. `WATCHING=false`
+
+`EXTRA_IMPORT` is written to all `Auto.elm` files if present, e.g. `EXTRA_IMPORT='Time.Extra excposing (..)'`
+
 # How it works
 
 An Elm module `Foo.Bar` like below

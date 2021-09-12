@@ -221,8 +221,8 @@ jsonString str =
     Json.Encode.encode 0 (Json.Encode.string str)
 
 
-produceSourceCode : String -> ElmFile -> String
-produceSourceCode prelude file =
+produceSourceCode : String -> ElmFile -> Maybe String -> String
+produceSourceCode prelude file extraImport =
     let
         parentModuleName =
             String.dropRight 1 file.modulePrefix
@@ -230,10 +230,12 @@ produceSourceCode prelude file =
         givenImports =
             Set.union file.imports
                 (Set.fromList
-                    [ "Json.Encode"
-                    , "Json.Decode"
-                    , "Set"
-                    ]
+                    ([ "Json.Encode"
+                     , "Json.Decode"
+                     , "Set"
+                     ]
+                        ++ Maybe.withDefault [] (Maybe.map List.singleton extraImport)
+                    )
                 )
 
         sourceHeader =

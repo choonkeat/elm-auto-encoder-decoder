@@ -44,7 +44,7 @@ update msg model =
                     ( model
                     , writeUTF8
                         { filename = String.replace ".elm" "/Auto.elm" event.filename
-                        , content = Elm.Types.AutoEncoder.produceSourceCode prelude elmFile
+                        , content = Elm.Types.AutoEncoder.produceSourceCode prelude elmFile event.extraImport
                         }
                     )
 
@@ -132,6 +132,7 @@ type Result x a
 type alias ReadFile =
     { filename : String
     , encoding : String
+    , extraImport : Maybe String
     , data : String
     }
 
@@ -175,16 +176,17 @@ onWriteUTF tagger =
 
 decodeReadFile : Json.Decode.Decoder ReadFile
 decodeReadFile =
-    Json.Decode.map4 (\a b c d -> { filename = a, encoding = b, err = c, data = d })
+    Json.Decode.map5 (\filename encoding extraImport err data -> { filename = filename, encoding = encoding, extraImport = extraImport, err = err, data = data })
         (Json.Decode.field "filename" Json.Decode.string)
         (Json.Decode.field "encoding" Json.Decode.string)
+        (Json.Decode.field "extraImport" (Json.Decode.maybe Json.Decode.string))
         (Json.Decode.maybe (Json.Decode.field "err" Json.Decode.string))
         (Json.Decode.maybe (Json.Decode.field "data" Json.Decode.string))
         |> Json.Decode.andThen
-            (\{ filename, encoding, err, data } ->
+            (\{ filename, encoding, extraImport, err, data } ->
                 case ( err, data ) of
                     ( Nothing, Just s ) ->
-                        Json.Decode.succeed { filename = filename, encoding = encoding, data = s }
+                        Json.Decode.succeed { filename = filename, encoding = encoding, extraImport = extraImport, data = s }
 
                     ( maybeErr, _ ) ->
                         Json.Decode.fail (Debug.toString maybeErr)
