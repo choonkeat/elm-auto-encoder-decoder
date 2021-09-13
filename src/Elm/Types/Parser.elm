@@ -93,7 +93,7 @@ namedExports =
                         ExposingEverything
 
                     _ ->
-                        ExposingOnly list
+                        ExposingOnly (List.map String.trim list)
             )
 
 
@@ -890,7 +890,11 @@ addModuleDef file (ModuleDef (TitleCaseDotPhrase name) exposing_) moduleComments
             else
                 file.skipTypes
     in
-    { file | modulePrefix = name ++ ".", skipTypes = newSkipTypes }
+    { file
+        | modulePrefix = name ++ "."
+        , skipTypes = newSkipTypes
+        , exposing_ = exposing_
+    }
 
 
 addImportDef : ElmFile -> ImportDef -> ElmFile
@@ -952,7 +956,14 @@ fileContent =
                 , Parser.succeed (addImportDef currentFile >> Parser.Loop)
                     |= importDefinition
                     |. comments
-                , Parser.succeed (Parser.Done { currentFile | knownTypes = qualifyKnownTypes currentFile.importResolver currentFile.knownTypes })
+                , Parser.succeed
+                    (Parser.Done
+                        { currentFile
+                            | knownTypes =
+                                qualifyKnownTypes (Dict.union currentFile.preludeResolver currentFile.importResolver)
+                                    currentFile.knownTypes
+                        }
+                    )
                     |. Parser.end
                 , Parser.succeed (Parser.Loop currentFile)
                     |. Parser.chompUntilEndOr "\n"
@@ -961,9 +972,10 @@ fileContent =
     in
     Parser.loop
         { modulePrefix = ""
+        , exposing_ = ExposingOnly []
         , imports = Set.empty
         , importExposing = Dict.empty
-        , importResolver =
+        , preludeResolver =
             Dict.fromList
                 [ -- (givenString, qualifiedString)
                   ( "String", "String" )
@@ -985,6 +997,7 @@ fileContent =
                 , ( "Task", "Platform.Task" )
                 , ( "Tuple", "Tuple" )
                 ]
+        , importResolver = Dict.empty
         , knownTypes = Dict.empty
         , skipTypes = Set.empty
         }
@@ -1044,6 +1057,36 @@ isTypeParameter phrase =
 
         Nothing ->
             False
+
+
+fullyExposed : Exposing -> Dict String String -> ElmTypeDef -> Bool
+fullyExposed exposing_ preludeResolver elmTypeDef =
+    let
+        baseName s =
+            String.split "." s
+                |> List.reverse
+                |> List.take 1
+                |> String.join "."
+    in
+    case exposing_ of
+        ExposingEverything ->
+            True
+
+        ExposingOnly list ->
+            case elmTypeDef of
+                CustomTypeDef ct ->
+                    case ct.name of
+                        TypeName name _ ->
+                            List.member name (Dict.values preludeResolver)
+                                || List.member (baseName name ++ "(..)") list
+
+                TypeAliasDef (AliasCustomType (TypeName name _) _) ->
+                    List.member name (Dict.values preludeResolver)
+                        || List.member (baseName name) list
+
+                TypeAliasDef (AliasRecordType (TypeName name _) _) ->
+                    List.member name (Dict.values preludeResolver)
+                        || List.member (baseName name) list
 
 
 containFunctionElmTypeDef : ElmTypeDef -> Bool

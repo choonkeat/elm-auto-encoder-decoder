@@ -91,6 +91,15 @@ decodeFooBarOption arga =
             )
 ```
 
+### Related Auto encoder decoders
+
+If `src/A.elm` imports from `src/B.elm`, its better to provide both filenames to the cli. The generated encoder/decoder of A will automatically reference the generated encoder/decoder of B
+
+### Exposed Types
+
+No encoder/decoder functions will be generated for types that are not fully exposed. i.e. a custom type has to be exposed with `(..)` e.g. `MyType(..)`.
+
+However, if there are exposed types that are composed from unexposed types, you're expected to supply the encoder/decoder functions manually by naming convention (see next point)
 
 ### Don't be alarmed with "I cannot find ... variable" compiler errors
 

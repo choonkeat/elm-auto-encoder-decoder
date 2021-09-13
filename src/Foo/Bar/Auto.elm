@@ -269,6 +269,26 @@ encodeFooBarPerson value =
         , ("age", (encodeInt) value.age)
         ]
 
+
+
+{- we cannot auto generate encoder/decoder for unexposed types
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.PrivateCustom") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Bar.PrivateCustom" [] } -}
+encodeFooBarPrivateCustom : Foo.Bar.PrivateCustom -> Json.Encode.Value
+encodeFooBarPrivateCustom value =
+    case value of
+        (Foo.Bar.PrivateCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.PrivateCustom", (encodeInt m0) ])
+-}
+
+
+
+{- we cannot auto generate encoder/decoder for unexposed types
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.ProtectedCustom") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Bar.ProtectedCustom" [] } -}
+encodeFooBarProtectedCustom : Foo.Bar.ProtectedCustom -> Json.Encode.Value
+encodeFooBarProtectedCustom value =
+    case value of
+        (Foo.Bar.ProtectedCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.ProtectedCustom", (encodeInt m0) ])
+-}
+
 {-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Acknowledgement" ["x"]) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []])) -}
 decodeFooBarAcknowledgement : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Acknowledgement x)
 decodeFooBarAcknowledgement argx =
@@ -371,3 +391,35 @@ decodeFooBarPerson  =
     Json.Decode.succeed Foo.Bar.Person
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "name" ] (decodeString))
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "age" ] (decodeInt))
+
+
+
+{- we cannot auto generate encoder/decoder for unexposed types
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.PrivateCustom") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Bar.PrivateCustom" [] } -}
+decodeFooBarPrivateCustom : Json.Decode.Decoder (Foo.Bar.PrivateCustom)
+decodeFooBarPrivateCustom  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.PrivateCustom" -> (Json.Decode.succeed Foo.Bar.PrivateCustom |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.PrivateCustom: " ++ word)
+            )
+                 
+-}
+
+
+
+{- we cannot auto generate encoder/decoder for unexposed types
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.ProtectedCustom") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Bar.ProtectedCustom" [] } -}
+decodeFooBarProtectedCustom : Json.Decode.Decoder (Foo.Bar.ProtectedCustom)
+decodeFooBarProtectedCustom  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.ProtectedCustom" -> (Json.Decode.succeed Foo.Bar.ProtectedCustom |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.ProtectedCustom: " ++ word)
+            )
+                 
+-}

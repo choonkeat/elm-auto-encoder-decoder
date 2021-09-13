@@ -1,6 +1,6 @@
 module Foo.Bar exposing
     ( Choice, Option(..)
-    , Acknowledgement, Custom_word(..), Hello(..), Lookup, Payload, Person
+    , Acknowledgement, Custom_word(..), Hello(..), Lookup, Payload, Person, ProtectedCustom
     )
 
 {-| add docs to make elm-format break up module expose into different lines
@@ -125,3 +125,11 @@ type Msg
 
 type alias Acknowledgement x =
     Result x ()
+
+
+type PrivateCustom
+    = PrivateCustom Int
+
+
+type ProtectedCustom
+    = ProtectedCustom Int

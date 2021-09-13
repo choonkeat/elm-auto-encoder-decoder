@@ -242,10 +242,13 @@ produceSourceCode prelude file extraImport autoModules =
             -- whatever `importExposing` we've gathered, add `autoModules` + `.Auto` to the mix
             Set.foldl (\s dict -> Dict.insert (s ++ ".Auto") ExposingEverything dict) file.importExposing autoModules
 
+        importResolver =
+            Dict.union file.preludeResolver file.importResolver
+
         sourceHeader =
             templateHeader
                 |> String.replace "{parentModuleName}" parentModuleName
-                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports autoModules importExposingLookups file.importResolver)
+                |> String.replace "{imports}" (sourceFromImports parentModuleName givenImports autoModules importExposingLookups importResolver)
                 |> String.replace "{prelude}" prelude
     in
     sourceHeader
@@ -301,12 +304,12 @@ encoderDefinitions : ElmFile -> String
 encoderDefinitions file =
     file.knownTypes
         |> Dict.values
-        |> List.map encoderDefinition
+        |> List.map (encoderDefinition file.exposing_ file.preludeResolver)
         |> String.join "\n\n\n\n"
 
 
-encoderDefinition : ElmTypeDef -> String
-encoderDefinition elmTypeDef =
+encoderDefinition : Exposing -> Dict String String -> ElmTypeDef -> String
+encoderDefinition exposing_ preludeResolver elmTypeDef =
     let
         code =
             case elmTypeDef of
@@ -342,6 +345,9 @@ encoderDefinition elmTypeDef =
     in
     if containFunctionElmTypeDef elmTypeDef then
         "{- functions cannot be encoded/decoded into json\n" ++ code ++ "\n-}"
+
+    else if not (fullyExposed exposing_ preludeResolver elmTypeDef) then
+        "{- we cannot auto generate encoder/decoder for unexposed types\n" ++ code ++ "\n-}"
 
     else
         code
@@ -549,12 +555,12 @@ decoderDefinitions : ElmFile -> String
 decoderDefinitions file =
     file.knownTypes
         |> Dict.values
-        |> List.map decoderDefinition
+        |> List.map (decoderDefinition file.exposing_ file.preludeResolver)
         |> String.join "\n\n\n\n"
 
 
-decoderDefinition : ElmTypeDef -> String
-decoderDefinition elmTypeDef =
+decoderDefinition : Exposing -> Dict String String -> ElmTypeDef -> String
+decoderDefinition exposing_ preludeResolver elmTypeDef =
     let
         code =
             case elmTypeDef of
@@ -590,6 +596,9 @@ decoderDefinition elmTypeDef =
     in
     if containFunctionElmTypeDef elmTypeDef then
         "{- functions cannot be encoded/decoded into json\n" ++ code ++ "\n-}"
+
+    else if not (fullyExposed exposing_ preludeResolver elmTypeDef) then
+        "{- we cannot auto generate encoder/decoder for unexposed types\n" ++ code ++ "\n-}"
 
     else
         code
