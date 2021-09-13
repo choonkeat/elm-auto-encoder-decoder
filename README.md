@@ -1,8 +1,8 @@
-# Parser for Elm types
+# elm-auto-encoder-decoder
 
-Enough to generate automatic encoder and decoder for [choonkeat/elm-webapp](https://github.com/choonkeat/elm-webapp#readme) `Client` and `Server` instances to pass `Msg` to and fro.
+Generate automatic encoder and decoder. Leveraged by [choonkeat/elm-webapp](https://github.com/choonkeat/elm-webapp#readme) `Client` and `Server` instances to pass `Msg` to and fro.
 
-# Usage
+## Usage
 
 ```
 npx elm-auto-encoder-decoder src/Types.elm
@@ -10,7 +10,7 @@ npx elm-auto-encoder-decoder src/Types.elm
 
 any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
 
-# ENV variable configurations
+## ENV variable configurations
 
 `GENERATED_SRC` will write `Auto.elm` files to a different directory than the source files, while keeping the directory hierarchy. e.g. `GENERATED_SRC=generated/src`
 
@@ -18,7 +18,7 @@ any time `src/Types.elm` file changes, `src/Types/Auto.elm` will be regenerated.
 
 `EXTRA_IMPORT` is written to all `Auto.elm` files if present, e.g. `EXTRA_IMPORT='Time.Extra excposing (..)'`
 
-# How it works
+## How it works
 
 An Elm module `Foo.Bar` like below
 
@@ -42,60 +42,13 @@ will be encoded and decoded as JSON like
 ["Foo.Bar.Some",true]
 ```
 
-by the generated Elm functions in the `Auto` submodule
+by the generated Elm functions in the corresponding [`Foo.Bar.Auto` module function](https://github.com/choonkeat/elm-auto-encoder-decoder/blob/21a3cd4d46e8bbdd418a3069fb5b79f6efd6a1be/src/Foo/Bar/Auto.elm#L242-L246)
 
-``` elm
-module Foo.Bar.Auto exposing (..)
+### Auto encoder decoders of related types
 
-import Foo.Bar
-import Json.Decode
-import Json.Decode.Pipeline
-import Json.Encode
+If `src/A.elm` imports from `src/B.elm`, its better to provide both filenames to the cli. The generated encoder/decoder of `A` will automatically reference the generated encoder/decoder of `B`
 
--- elided...
-
-encodeFooBarChoice : Foo.Bar.Choice -> Json.Encode.Value
-encodeFooBarChoice value =
-    encodeFooBarOption encodeBool value
-
-
-encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
-encodeFooBarOption arga value =
-    case value of
-        Foo.Bar.None ->
-            Json.Encode.list identity [ encodeString "Foo.Bar.None" ]
-
-        Foo.Bar.Some m0 ->
-            Json.Encode.list identity [ encodeString "Foo.Bar.Some", arga m0 ]
-
-
-decodeFooBarChoice : Json.Decode.Decoder Foo.Bar.Choice
-decodeFooBarChoice =
-    decodeFooBarOption decodeBool
-
-
-decodeFooBarOption : Json.Decode.Decoder a -> Json.Decode.Decoder (Foo.Bar.Option a)
-decodeFooBarOption arga =
-    Json.Decode.index 0 Json.Decode.string
-        |> Json.Decode.andThen
-            (\word ->
-                case word of
-                    "Foo.Bar.None" ->
-                        Json.Decode.succeed Foo.Bar.None
-
-                    "Foo.Bar.Some" ->
-                        Json.Decode.succeed Foo.Bar.Some |> Json.Decode.map2 (|>) (Json.Decode.index 1 arga)
-
-                    _ ->
-                        Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
-            )
-```
-
-### Related Auto encoder decoders
-
-If `src/A.elm` imports from `src/B.elm`, its better to provide both filenames to the cli. The generated encoder/decoder of A will automatically reference the generated encoder/decoder of B
-
-### Exposed Types
+### Exposed types
 
 No encoder/decoder functions will be generated for types that are not fully exposed. i.e. a custom type has to be exposed with `(..)` e.g. `MyType(..)`.
 
@@ -126,7 +79,7 @@ I cannot find a `encodeTimePosix` variable:
                               ^^^^^^^^^^^^^^^
 ```
 
-**just implement and expose those function names** in your `src/Types.elm`, for example:
+**just implement and expose those function names** in your source `src/Types.elm` (or a different file specified by `EXTRA_IMPORT` env), for example:
 
 ``` elm
 decodeTimePosix : Json.Decode.Decoder Time.Posix
