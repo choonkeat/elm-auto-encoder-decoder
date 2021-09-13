@@ -12,8 +12,14 @@ const extraImport = process.env.EXTRA_IMPORT
 const generatedSrc = process.env.GENERATED_SRC
 
 var throttle = {}
+const autoModules = process.argv.slice(2).map((filepath) => innerPath(filepath, []).split(path.sep).join('.'))
+var exitCount = autoModules.length
 
-if (app.ports.exit && !watching) app.ports.exit.subscribe(process.exit)
+if (app.ports.exit && !watching) app.ports.exit.subscribe(function(i) {
+  exitCount--;
+  if (exitCount > 0 && i === 0) return // wait for more
+  process.exit(i)
+})
 
 if (app.ports.writeFile) {
   app.ports.writeFile.subscribe(({ filename, encoding, data }) => {
@@ -44,8 +50,6 @@ function innerPath(filepath, resultpath) {
   }
   return innerPath(parts.dir, [parts.name, ...resultpath])
 }
-
-const autoModules = process.argv.slice(2).map((filepath) => innerPath(filepath, []).split(path.sep).join('.'))
 
 process.argv.slice(2).forEach((filepath) => {
   var encoding = 'utf8'
