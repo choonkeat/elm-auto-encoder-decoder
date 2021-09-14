@@ -69,6 +69,7 @@ module Foo.Bar exposing
 
 -}
 
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Foo.Baz
 import Json.Decode
@@ -113,7 +114,7 @@ type Custom_word
 
 
 type alias Lookup =
-    Dict String Foo.Baz.Record
+    Dict String (Array Foo.Baz.Record)
 
 
 {-| There will not be an Auto encoder/decoder for this type since it contains a function

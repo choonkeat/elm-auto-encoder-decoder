@@ -5,6 +5,7 @@ module Foo.Bar.Auto exposing (..)
 
 
 import Foo.Bar exposing (..)
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Foo.Baz
 import Foo.Baz.Auto exposing (..)
@@ -42,6 +43,11 @@ encodeBool =
 encodeList : (a -> Json.Encode.Value) -> List a -> Json.Encode.Value
 encodeList =
     Json.Encode.list
+
+
+encodeArrayArray : (a -> Json.Encode.Value) -> Array.Array a -> Json.Encode.Value
+encodeArrayArray =
+    Json.Encode.array
 
 
 encodeSetSet : (comparable -> Json.Encode.Value) -> Set.Set comparable -> Json.Encode.Value
@@ -106,6 +112,11 @@ decodeBool =
 decodeList : (Json.Decode.Decoder a) -> Json.Decode.Decoder (List a)
 decodeList =
     Json.Decode.list
+
+
+decodeArrayArray : (Json.Decode.Decoder a) -> Json.Decode.Decoder (Array.Array a)
+decodeArrayArray =
+    Json.Decode.array
 
 
 decodeSetSet : (Json.Decode.Decoder comparable) -> Json.Decode.Decoder (Set.Set comparable)
@@ -220,10 +231,10 @@ encodeFooBarHello argx value =
 
 
 
-{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []])) -}
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Array.Array") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []]])) -}
 encodeFooBarLookup : Foo.Bar.Lookup -> Json.Encode.Value
 encodeFooBarLookup value =
-    (encodeDictDict (encodeString) (encodeFooBazRecord)) value
+    (encodeDictDict (encodeString) (encodeArrayArray (encodeFooBazRecord))) value
 
 
 
@@ -333,10 +344,10 @@ decodeFooBarHello argx =
 
 
 
-{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []])) -}
+{-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Lookup" []) (CustomTypeConstructor (TitleCaseDotPhrase "Dict.Dict") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Array.Array") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Record") []]])) -}
 decodeFooBarLookup : Json.Decode.Decoder (Foo.Bar.Lookup)
 decodeFooBarLookup  =
-    (decodeDictDict (decodeString) (decodeFooBazRecord))
+    (decodeDictDict (decodeString) (decodeArrayArray (decodeFooBazRecord)))
 
 
 

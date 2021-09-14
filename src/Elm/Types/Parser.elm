@@ -986,7 +986,7 @@ fileContent =
                 , ( "Result", "Result" )
                 , ( "Maybe", "Maybe" )
                 , ( "Maybe.Maybe", "Maybe" )
-                , ( "Array", "Array" )
+                , ( "Array", "Array.Array" )
                 , ( "Char", "Char" )
                 , ( "List", "List" )
                 , ( "List.List", "List" )

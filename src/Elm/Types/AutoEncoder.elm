@@ -49,6 +49,11 @@ encodeList =
     Json.Encode.list
 
 
+encodeArrayArray : (a -> Json.Encode.Value) -> Array.Array a -> Json.Encode.Value
+encodeArrayArray =
+    Json.Encode.array
+
+
 encodeSetSet : (comparable -> Json.Encode.Value) -> Set.Set comparable -> Json.Encode.Value
 encodeSetSet encoder =
     Set.toList >> encodeList encoder
@@ -111,6 +116,11 @@ decodeBool =
 decodeList : (Json.Decode.Decoder a) -> Json.Decode.Decoder (List a)
 decodeList =
     Json.Decode.list
+
+
+decodeArrayArray : (Json.Decode.Decoder a) -> Json.Decode.Decoder (Array.Array a)
+decodeArrayArray =
+    Json.Decode.array
 
 
 decodeSetSet : (Json.Decode.Decoder comparable) -> Json.Decode.Decoder (Set.Set comparable)
@@ -232,6 +242,7 @@ produceSourceCode prelude file extraImport autoModules =
                 (Set.fromList
                     ([ "Json.Encode"
                      , "Json.Decode"
+                     , "Array"
                      , "Set"
                      ]
                         ++ Maybe.withDefault [] (Maybe.map List.singleton extraImport)
