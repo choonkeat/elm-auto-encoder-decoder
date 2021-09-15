@@ -2,6 +2,8 @@
 
 Generate automatic encoder and decoder. Leveraged by [choonkeat/elm-webapp](https://github.com/choonkeat/elm-webapp#readme) `Client` and `Server` instances to pass `Msg` to and fro.
 
+_NOTE: While the generated decoders can always decode json encoded by the same version generator, there is no guarantee future versions can decode whatever was encoded in prior versions. :. If you're storing json for later retrieval, I do not recommend using the encoder/decoder here; I don't._
+
 ## Usage
 
 ```
