@@ -71,7 +71,7 @@ module Foo.Bar exposing
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Foo.Baz
+import Foo.Baz exposing (Record, Transparent(..))
 import Json.Decode
 import Json.Encode
 import Main exposing (Msg)

@@ -230,8 +230,30 @@ encodeFooBazRecord value =
         [ ("title", (encodeString) value.title)
         ]
 
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Transparent") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Baz.Transparent" [] } -}
+encodeFooBazTransparent : Foo.Baz.Transparent -> Json.Encode.Value
+encodeFooBazTransparent value =
+    case value of
+        (Foo.Baz.Transparent m0) -> (Json.Encode.list identity [ encodeString "Foo.Baz.Transparent", (encodeInt m0) ])
+
 {-| TypeAliasDef (AliasRecordType (TypeName "Foo.Baz.Record" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") [])]) -}
 decodeFooBazRecord : Json.Decode.Decoder (Foo.Baz.Record)
 decodeFooBazRecord  =
     Json.Decode.succeed Foo.Baz.Record
         |> Json.Decode.map2 (|>) (Json.Decode.at [ "title" ] (decodeString))
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Baz.Transparent") [CustomTypeConstructor (TitleCaseDotPhrase "Int") []]], name = TypeName "Foo.Baz.Transparent" [] } -}
+decodeFooBazTransparent : Json.Decode.Decoder (Foo.Baz.Transparent)
+decodeFooBazTransparent  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Baz.Transparent" -> (Json.Decode.succeed Foo.Baz.Transparent |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    _ -> Json.Decode.fail ("Unexpected Foo.Baz.Transparent: " ++ word)
+            )
+                 

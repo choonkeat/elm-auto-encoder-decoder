@@ -297,8 +297,8 @@ produceSourceCode prelude file extraImport autoModules =
 
 
 sourceFromImports : String -> Set String -> Set String -> Dict String Exposing -> Dict String String -> String
-sourceFromImports modulePrefix modules autoModules moduleExposing dict =
-    -- |> (\s -> s ++ "\n\n\n{- importResolver: " ++ Json.Encode.encode 2 (Json.Encode.dict identity Json.Encode.string dict) ++ " -}")
+sourceFromImports modulePrefix modules autoModules moduleExposing importResolver =
+    -- |> (\s -> s ++ "\n\n\n{- importResolver: " ++ Json.Encode.encode 2 (Json.Encode.dict identity Json.Encode.string importResolver) ++ " -}")
     let
         withExposing m =
             Dict.get m moduleExposing
@@ -310,7 +310,7 @@ sourceFromImports modulePrefix modules autoModules moduleExposing dict =
                 |> Set.map (\s -> s ++ ".Auto")
                 |> Set.union imported
     in
-    Set.fromList (Dict.values dict)
+    Set.fromList (Dict.values importResolver)
         |> Set.map (String.split ".")
         |> Set.map (\list -> String.join "." (List.take (List.length list - 1) list))
         |> Set.filter (\s -> s /= "" && not (String.startsWith modulePrefix s))

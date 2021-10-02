@@ -63,11 +63,14 @@ titleCaseDotPhrase =
     Parser.run namedExports "(..)"
     --> Ok ExposingEverything
 
-    Parser.run namedExports "((=>), world)"
-    --> Ok (ExposingOnly ["=>", "world"])
+    Parser.run namedExports "((=>), World)"
+    --> Ok (ExposingOnly ["(=>)", "World"])
 
-    Parser.run namedExports "(hello, (=>))"
-    --> Ok (ExposingOnly ["hello", "=>"])
+    Parser.run namedExports "((<*>), World(..))"
+    --> Ok (ExposingOnly ["(<*>)", "World(..)"])
+
+    Parser.run namedExports "(hello, (?!))"
+    --> Ok (ExposingOnly ["hello", "(?!)"])
 
     Parser.run namedExports "(hello world)"
     --> Err [{ col = 8, problem = Parser.Expecting ",", row = 1 },{ col = 8, problem = Parser.Expecting ")", row = 1 }]
@@ -103,7 +106,10 @@ namedExports =
     import Elm.Types exposing (..)
 
     Parser.run namedExport "(=>), world"
-    --> Ok "=>"
+    --> Ok "(=>)"
+
+    Parser.run namedExport "World(..), (=>)"
+    --> Ok "World(..)"
 
     Parser.run namedExport "hello world"
     --> Ok "hello"
@@ -121,7 +127,6 @@ namedExport =
             |. Parser.chompUntilEndOr ")"
             |. Parser.symbol ")"
             |> Parser.getChompedString
-            |> Parser.map (String.dropLeft 1 >> String.dropRight 1)
         , Parser.backtrackable wordInParen
             |. Parser.symbol "(..)"
             |> Parser.getChompedString
@@ -141,7 +146,7 @@ namedExport =
     --> Ok (ModuleDef (TitleCaseDotPhrase "Elm.Types.Parser") (ExposingOnly ["fieldName", "moduleDefinition"]))
 
     Parser.run moduleDefinition "module Parser exposing ((|.), (|=), Parser, Step(..))"
-    --> Ok (ModuleDef (TitleCaseDotPhrase "Parser") (ExposingOnly ["|.", "|=", "Parser", "Step(..)"]))
+    --> Ok (ModuleDef (TitleCaseDotPhrase "Parser") (ExposingOnly ["(|.)", "(|=)", "Parser", "Step(..)"]))
 
 -}
 moduleDefinition : Parser.Parser ModuleDef
@@ -897,6 +902,36 @@ addModuleDef file (ModuleDef (TitleCaseDotPhrase name) exposing_) moduleComments
     }
 
 
+{-|
+
+    import Elm.Types exposing (..)
+    import Set exposing (Set)
+    import Dict exposing (Dict)
+
+    file : ElmFile
+    file =
+        { modulePrefix = ""
+        , exposing_ = ExposingEverything
+        , imports = Set.empty
+        , importExposing = Dict.empty
+        , preludeResolver = Dict.empty
+        , importResolver = Dict.empty
+        , knownTypes = Dict.empty
+        , skipTypes = Set.empty
+        }
+
+    addImportDef file <|
+        ImportDef
+            (TitleCaseDotPhrase "Hello.World")
+            (Just "Greeting")
+            (ExposingOnly [ "Language(..)" ])
+    --> { file
+    -->     | importExposing = Dict.fromList [ ("Language", ExposingOnly ["Language(..)"]) ]
+    -->     , importResolver = Dict.fromList [ ("Greeting","Hello.World"),("Language","Hello.World.Language") ]
+    -->     , imports = Set.fromList [ "Hello.World" ]
+    --> }
+
+-}
 addImportDef : ElmFile -> ImportDef -> ElmFile
 addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_) =
     let
@@ -924,18 +959,20 @@ addImportDef file (ImportDef (TitleCaseDotPhrase name) maybeAliasName exposing_)
 
         ExposingOnly (x :: xs) ->
             let
-                namespaced =
-                    if List.any (not << isNameCharacter) (String.toList x) then
-                        -- for infix operators, restore the parenthesis
-                        name ++ "." ++ "(" ++ x ++ ")"
+                trimmed =
+                    if String.endsWith "(..)" x then
+                        String.dropRight 4 x
 
                     else
-                        name ++ "." ++ x
+                        x
+
+                namespaced =
+                    name ++ "." ++ trimmed
 
                 newFile =
                     { file
-                        | importResolver = Dict.insert x namespaced newImportResolver
-                        , importExposing = Dict.insert x exposing_ file.importExposing
+                        | importResolver = Dict.insert trimmed namespaced newImportResolver
+                        , importExposing = Dict.insert trimmed exposing_ file.importExposing
                     }
             in
             addImportDef newFile (ImportDef (TitleCaseDotPhrase name) maybeAliasName (ExposingOnly xs))
