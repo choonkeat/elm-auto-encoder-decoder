@@ -60,7 +60,7 @@ process.argv.slice(2).forEach((filepath) => {
 
     console.log('watching', filepath, '...')
     var dirname = stats.isDirectory() ? filepath : path.dirname(filepath)
-    fs.watch(filepath, { recursive: true }, (eventType, basename) => {
+    fs.watch(filepath, (eventType, basename) => {
       var filename = path.join(dirname, basename)
       if (throttle[filename]) return
       readAndWrite(filename, encoding, autoModules)
