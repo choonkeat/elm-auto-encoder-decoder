@@ -3,7 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 
-global.XMLHttpRequest = require('xhr2')
+global.XMLHttpRequest = {}
 const { Elm } = require('./build/Main.js')
 const app = Elm.Main.init({ flags: {} })
 const watching = (process.env.WATCHING !== 'false')

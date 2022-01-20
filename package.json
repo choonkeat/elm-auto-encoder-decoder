@@ -10,13 +10,8 @@
     "test": "tests"
   },
   "dependencies": {
-    "npm": "^7.23.0",
-    "xhr2": "^0.2.0"
   },
   "devDependencies": {
-    "lodash": ">=4.17.21",
-    "glob-parent": ">=5.1.2",
-    "tar": ">=4.4.18",
     "elm-test": "^0.19.1-revision4",
     "elm-verify-examples": "^5.0.0"
   },
