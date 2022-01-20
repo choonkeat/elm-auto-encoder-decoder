@@ -3,14 +3,13 @@
   "bin": {
     "elm-auto-encoder-decoder": "./index.js"
   },
-  "version": "1.6.7",
+  "version": "1.7.0",
   "description": "Watch for file changes and auto generate JSON encoder and decoder for *.elm types",
   "main": "index.js",
   "directories": {
     "test": "tests"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "elm-test": "^0.19.1-revision4",
     "elm-verify-examples": "^5.0.0"
