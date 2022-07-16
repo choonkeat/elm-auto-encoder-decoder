@@ -14,4 +14,4 @@ test: build
 	elm-verify-examples && elm-test
 
 watch:
-	while fswatch --one-event --recursive src; do make test; done
+	while fswatch --one-event --recursive src; do make test; sleep 1; done

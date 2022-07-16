@@ -18,6 +18,7 @@ import Set exposing (Set)
     --> Err [{ col = 1, problem = Parser.UnexpectedChar, row = 1 }]
 
 -}
+titleCaseWord : Parser String
 titleCaseWord =
     Parser.succeed ()
         |. Parser.chompIf Char.isUpper
@@ -305,6 +306,7 @@ nestedTypeName =
         |> Parser.map functionFromCustomTypeConstructor
 
 
+functionArrow : CustomTypeConstructor
 functionArrow =
     ConstructorTypeParam "->"
 
