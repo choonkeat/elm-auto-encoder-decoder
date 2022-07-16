@@ -1,6 +1,6 @@
 module Foo.Bar exposing
     ( Choice, Option(..)
-    , Acknowledgement, Custom_word(..), Hello(..), Lookup, Payload, Person, ProtectedCustom
+    , Acknowledgement, Custom_word(..), Hello(..), Lookup, Payload, Person, ProtectedCustom, WithTypeVariable
     )
 
 {-| add docs to make elm-format break up module expose into different lines
@@ -134,3 +134,9 @@ type PrivateCustom
 
 type ProtectedCustom
     = ProtectedCustom Int
+
+
+type alias WithTypeVariable a =
+    { meta : Int
+    , data : a
+    }

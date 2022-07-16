@@ -276,7 +276,7 @@ encodeFooBarMsg value =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "Foo.Bar.a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
 encodeFooBarOption : (a -> Json.Encode.Value) -> Foo.Bar.Option a -> Json.Encode.Value
 encodeFooBarOption arga value =
     case value of
@@ -326,6 +326,16 @@ encodeFooBarProtectedCustom value =
     case value of
         (Foo.Bar.ProtectedCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.ProtectedCustom", (encodeInt m0) ])
 -}
+
+
+
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Int") []),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
+encodeFooBarWithTypeVariable : (a -> Json.Encode.Value) -> Foo.Bar.WithTypeVariable a -> Json.Encode.Value
+encodeFooBarWithTypeVariable arga value =
+    Json.Encode.object
+        [ ("meta", (encodeInt) value.meta)
+        , ("data", (arga) value.data)
+        ]
 
 {-| TypeAliasDef (AliasCustomType (TypeName "Foo.Bar.Acknowledgement" ["x"]) (CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "()") []])) -}
 decodeFooBarAcknowledgement : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Acknowledgement x)
@@ -395,7 +405,7 @@ decodeFooBarMsg  =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.None") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Some") [ConstructorTypeParam "Foo.Bar.a"]], name = TypeName "Foo.Bar.Option" ["a"] } -}
 decodeFooBarOption : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Foo.Bar.Option a)
 decodeFooBarOption arga =
     Json.Decode.index 0 Json.Decode.string
@@ -461,3 +471,12 @@ decodeFooBarProtectedCustom  =
             )
                  
 -}
+
+
+
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Int") []),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
+decodeFooBarWithTypeVariable : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Foo.Bar.WithTypeVariable a)
+decodeFooBarWithTypeVariable arga =
+    Json.Decode.succeed Foo.Bar.WithTypeVariable
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "meta" ] (decodeInt))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "data" ] (arga))

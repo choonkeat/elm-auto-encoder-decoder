@@ -233,7 +233,7 @@ constructorFunctionName funcPrefix ct =
                         |> String.join " "
 
                 ConstructorTypeParam s ->
-                    "arg" ++ s
+                    argConstructorTypeParam s
 
                 Tuple2 ct0 ct1 ->
                     constructorFunctionName funcPrefix ct0
@@ -504,6 +504,16 @@ encoderPatternMatches varPrefix index constructor =
     encoderPatternMatchesLHS varPrefix index constructor ++ " -> " ++ encoderPatternMatchesRHS varPrefix index constructor
 
 
+argConstructorTypeParam : String -> String
+argConstructorTypeParam str =
+    str
+        |> String.split "."
+        |> List.reverse
+        |> List.take 1
+        |> String.join "."
+        |> String.append "arg"
+
+
 encoderSourceFromCustomTypeConstructor : String -> Int -> CustomTypeConstructor -> String
 encoderSourceFromCustomTypeConstructor varPrefix i constructor =
     let
@@ -525,10 +535,10 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
 
                 ConstructorTypeParam s ->
                     if varPrefix == "" then
-                        "arg" ++ s
+                        argConstructorTypeParam s
 
                     else
-                        "arg" ++ s ++ " " ++ varPrefix ++ String.fromInt i
+                        argConstructorTypeParam s ++ " " ++ varPrefix ++ String.fromInt i
 
                 Tuple2 ct0 ct1 ->
                     encoderSourceFromCustomTypeConstructor varPrefix 0 ct0
@@ -743,7 +753,7 @@ decoderPatternMatchesRHS constructor =
                         |> String.join " |> "
 
                 ConstructorTypeParam s ->
-                    "arg" ++ s
+                    argConstructorTypeParam s
 
                 Tuple2 ct0 ct1 ->
                     "(" ++ decoderPatternMatchesRHS ct0 ++ ", " ++ decoderPatternMatchesRHS ct1 ++ ")"
@@ -778,7 +788,7 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
                         |> String.join " "
 
                 ConstructorTypeParam s ->
-                    "arg" ++ s
+                    argConstructorTypeParam s
 
                 Tuple2 ct0 ct1 ->
                     decoderSourceFromCustomTypeConstructor pipelining 0 ct0

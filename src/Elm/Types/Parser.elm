@@ -576,7 +576,10 @@ fieldPair =
             Parser.succeed CustomField
                 |= fieldName
                 |. Parser.symbol " : "
-                |= nestedTypeName
+                |= Parser.oneOf
+                    [ nestedTypeName
+                    , constructorTypeParam
+                    ]
         , Parser.succeed NestedField
             |= fieldName
             |. Parser.symbol " : "
