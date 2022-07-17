@@ -200,7 +200,7 @@ decodeMaybe arga =
             (\word ->
                 case word of
                     "Nothing" -> (Json.Decode.succeed Nothing)
-                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
+                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (arga)))))
                     _ -> Json.Decode.fail ("Unexpected Maybe: " ++ word)
             )
                  
@@ -214,8 +214,8 @@ decodeResult argx arga =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (argx))))
-                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
+                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (argx)))))
+                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (arga)))))
                     _ -> Json.Decode.fail ("Unexpected Result: " ++ word)
             )
                  
@@ -227,7 +227,7 @@ decodeResult argx arga =
 encodeFooBazRecord : Foo.Baz.Record -> Json.Encode.Value
 encodeFooBazRecord value =
     Json.Encode.object
-        [ ("title", (encodeString) value.title)
+        [ ("title", encodeString value.title)
         ]
 
 
@@ -236,7 +236,7 @@ encodeFooBazRecord value =
 encodeFooBazTransparent : Foo.Baz.Transparent -> Json.Encode.Value
 encodeFooBazTransparent value =
     case value of
-        (Foo.Baz.Transparent m0) -> (Json.Encode.list identity [ encodeString "Foo.Baz.Transparent", (encodeInt m0) ])
+        (Foo.Baz.Transparent m0) -> (Json.Encode.list identity [ encodeString "Foo.Baz.Transparent", encodeInt m0 ])
 
 {-| TypeAliasDef (AliasRecordType (TypeName "Foo.Baz.Record" []) [CustomField (FieldName "title") (CustomTypeConstructor (TitleCaseDotPhrase "String") [])]) -}
 decodeFooBazRecord : Json.Decode.Decoder (Foo.Baz.Record)
@@ -253,7 +253,7 @@ decodeFooBazTransparent  =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Foo.Baz.Transparent" -> (Json.Decode.succeed Foo.Baz.Transparent |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    "Foo.Baz.Transparent" -> (Json.Decode.succeed Foo.Baz.Transparent |> (Json.Decode.map2 (|>) ( (Json.Decode.index 1 (decodeInt)))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Baz.Transparent: " ++ word)
             )
                  

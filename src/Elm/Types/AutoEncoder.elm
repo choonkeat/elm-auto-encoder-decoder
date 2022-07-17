@@ -1,4 +1,9 @@
-module Elm.Types.AutoEncoder exposing (decoderDefinitions, encoderDefinitions, produceSourceCode)
+module Elm.Types.AutoEncoder exposing
+    ( decoderDefinitions
+    , encoderDefinitions
+    , produceSourceCode
+    , test
+    )
 
 import Dict exposing (Dict)
 import Elm.Types exposing (..)
@@ -448,19 +453,33 @@ encoderBodyOf elmTypeDef =
 encoderPatternMatchesLHS : String -> Int -> CustomTypeConstructor -> String
 encoderPatternMatchesLHS varPrefix index constructor =
     let
+        varName i constr =
+            case constr of
+                Tuple2 ct0 ct1 ->
+                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1 )"
+
+                Tuple3 ct0 ct1 ct2 ->
+                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2 )"
+
+                _ ->
+                    varPrefix ++ String.fromInt i
+
         str =
             case constructor of
+                CustomTypeConstructor (TitleCaseDotPhrase s) [] ->
+                    s
+
                 CustomTypeConstructor (TitleCaseDotPhrase s) list ->
-                    String.join " " (s :: List.indexedMap (\i _ -> varPrefix ++ String.fromInt i) list)
+                    String.join " " (s :: List.indexedMap varName list)
 
                 ConstructorTypeParam s ->
                     varPrefix ++ String.fromInt index
 
                 Tuple2 ct0 ct1 ->
-                    varPrefix ++ "0, " ++ varPrefix ++ "1"
+                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1 )"
 
                 Tuple3 ct0 ct1 ct2 ->
-                    varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2"
+                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2 )"
 
                 Function argType returnType ->
                     -- ABORT
@@ -487,10 +506,10 @@ encoderPatternMatchesRHS varPrefix index constructor =
                     varPrefix ++ String.fromInt index
 
                 Tuple2 ct0 ct1 ->
-                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1)"
+                    varPrefix ++ "0, " ++ varPrefix ++ "1"
 
                 Tuple3 ct0 ct1 ct2 ->
-                    "(" ++ varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2)"
+                    varPrefix ++ "0, " ++ varPrefix ++ "1, " ++ varPrefix ++ "2"
 
                 Function argType returnType ->
                     -- ABORT
@@ -504,6 +523,17 @@ encoderPatternMatches varPrefix index constructor =
     encoderPatternMatchesLHS varPrefix index constructor ++ " -> " ++ encoderPatternMatchesRHS varPrefix index constructor
 
 
+test =
+    { argConstructorTypeParam = argConstructorTypeParam
+    }
+
+
+{-|
+
+    test.argConstructorTypeParam "Foo.Bar.a"
+    --> "arga"
+
+-}
 argConstructorTypeParam : String -> String
 argConstructorTypeParam str =
     str
@@ -514,6 +544,11 @@ argConstructorTypeParam str =
         |> String.append "arg"
 
 
+surround : String -> String -> String -> String
+surround left right middle =
+    left ++ middle ++ right
+
+
 encoderSourceFromCustomTypeConstructor : String -> Int -> CustomTypeConstructor -> String
 encoderSourceFromCustomTypeConstructor varPrefix i constructor =
     let
@@ -522,7 +557,7 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
                 CustomTypeConstructor (TitleCaseDotPhrase s) list ->
                     let
                         encodeParams =
-                            List.indexedMap (encoderSourceFromCustomTypeConstructor "") list
+                            List.indexedMap (\index constr -> encoderSourceFromCustomTypeConstructor "" index constr |> surround "(" ")") list
                     in
                     if varPrefix == "" then
                         ("encode" ++ sanitizeTitleCaseDotPhrase s)
@@ -535,10 +570,10 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
 
                 ConstructorTypeParam s ->
                     if varPrefix == "" then
-                        argConstructorTypeParam s
+                        surround "(" ")" (argConstructorTypeParam s)
 
                     else
-                        argConstructorTypeParam s ++ " " ++ varPrefix ++ String.fromInt i
+                        surround "(" ")" (argConstructorTypeParam s ++ " " ++ varPrefix ++ String.fromInt i)
 
                 Tuple2 ct0 ct1 ->
                     encoderSourceFromCustomTypeConstructor varPrefix 0 ct0
@@ -556,7 +591,7 @@ encoderSourceFromCustomTypeConstructor varPrefix i constructor =
                     -- ABORT
                     "<function>"
     in
-    "(" ++ str ++ ")"
+    str
 
 
 encoderBodyOfFieldPairList : String -> List FieldPair -> List String
@@ -780,34 +815,45 @@ decoderSourceFromCustomTypeConstructor pipelining index constructor =
             case constructor of
                 CustomTypeConstructor (TitleCaseDotPhrase s) list ->
                     let
-                        decodeParams =
-                            List.indexedMap (decoderSourceFromCustomTypeConstructor False) list
+                        decoder =
+                            ("decode" ++ sanitizeTitleCaseDotPhrase s)
+                                :: List.indexedMap (decoderSourceFromCustomTypeConstructor False) list
+                                |> String.join " "
                     in
-                    ("decode" ++ sanitizeTitleCaseDotPhrase s)
-                        :: decodeParams
-                        |> String.join " "
+                    if pipelining then
+                        " (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ decoder ++ "))"
+
+                    else
+                        decoder
 
                 ConstructorTypeParam s ->
-                    argConstructorTypeParam s
+                    if pipelining then
+                        "(Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ argConstructorTypeParam s ++ "))"
+
+                    else
+                        surround "(" ")" (argConstructorTypeParam s)
 
                 Tuple2 ct0 ct1 ->
-                    decoderSourceFromCustomTypeConstructor pipelining 0 ct0
-                        ++ ", "
-                        ++ decoderSourceFromCustomTypeConstructor pipelining 1 ct1
+                    [ "Json.Decode.map2 (\\item1 item2 -> (item1, item2))"
+                    , " (Json.Decode.index " ++ String.fromInt (index + 1) ++ " " ++ decoderSourceFromCustomTypeConstructor False 0 ct0 ++ ")"
+                    , " (Json.Decode.index " ++ String.fromInt (index + 2) ++ " " ++ decoderSourceFromCustomTypeConstructor False 0 ct1 ++ ")"
+                    ]
+                        |> String.join " "
 
                 Tuple3 ct0 ct1 ct2 ->
-                    decoderSourceFromCustomTypeConstructor pipelining 0 ct0
-                        ++ ", "
-                        ++ decoderSourceFromCustomTypeConstructor pipelining 1 ct1
-                        ++ ", "
-                        ++ decoderSourceFromCustomTypeConstructor pipelining 2 ct2
+                    [ "Json.Decode.map3 (\\item1 item2 item3 -> (item1, item2, item3)) "
+                    , " (Json.Decode.index " ++ String.fromInt (index + 1) ++ " " ++ decoderSourceFromCustomTypeConstructor False 0 ct0 ++ ")"
+                    , " (Json.Decode.index " ++ String.fromInt (index + 2) ++ " " ++ decoderSourceFromCustomTypeConstructor False 0 ct1 ++ ")"
+                    , " (Json.Decode.index " ++ String.fromInt (index + 3) ++ " " ++ decoderSourceFromCustomTypeConstructor False 0 ct2 ++ ")"
+                    ]
+                        |> String.join " "
 
                 Function argType returnType ->
                     -- ABORT
                     "<function>"
     in
     if pipelining then
-        "(Json.Decode.map2 (|>) (Json.Decode.index " ++ String.fromInt (index + 1) ++ " (" ++ str ++ ")))"
+        "(Json.Decode.map2 (|>) (" ++ str ++ "))"
 
     else
         "(" ++ str ++ ")"

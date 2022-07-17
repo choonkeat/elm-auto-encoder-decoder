@@ -432,7 +432,7 @@ parenthesised : Parser.Parser a -> Parser.Parser a
 parenthesised parser =
     Parser.multiComment "(" ")" Parser.Nestable
         |> Parser.getChompedString
-        |> Parser.map (\s -> String.dropRight 1 (String.dropLeft 1 s))
+        |> Parser.map (String.dropLeft 1 >> String.dropRight 1 >> String.trim)
         |> Parser.andThen
             (\s ->
                 case Parser.run parser s of
@@ -516,7 +516,7 @@ customTypeConstructorList =
             ]
 
     Parser.run customType (String.trim ("""
-        type Dict a b = Dict (Set (a, b))
+        type Dict a b = Dict ( Set ( a, b ) )
     """))
     --> Ok dictCustomType
 

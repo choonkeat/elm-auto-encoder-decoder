@@ -203,7 +203,7 @@ decodeMaybe arga =
             (\word ->
                 case word of
                     "Nothing" -> (Json.Decode.succeed Nothing)
-                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
+                    "Just" -> (Json.Decode.succeed Just |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (arga)))))
                     _ -> Json.Decode.fail ("Unexpected Maybe: " ++ word)
             )
                  
@@ -217,8 +217,8 @@ decodeResult argx arga =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (argx))))
-                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
+                    "Err" -> (Json.Decode.succeed Err |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (argx)))))
+                    "Ok" -> (Json.Decode.succeed Ok |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (arga)))))
                     _ -> Json.Decode.fail ("Unexpected Result: " ++ word)
             )
                  
@@ -240,6 +240,26 @@ encodeFooBarChoice value =
 
 
 
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.LatLng") [Tuple2 (CustomTypeConstructor (TitleCaseDotPhrase "Float") []) (CustomTypeConstructor (TitleCaseDotPhrase "Float") [])],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Address") [Tuple3 (CustomTypeConstructor (TitleCaseDotPhrase "String") []) (CustomTypeConstructor (TitleCaseDotPhrase "Int") []) (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.CountryCode") [])]], name = TypeName "Foo.Bar.Coordinates" [] } -}
+encodeFooBarCoordinates : Foo.Bar.Coordinates -> Json.Encode.Value
+encodeFooBarCoordinates value =
+    case value of
+        (Foo.Bar.LatLng (m0, m1 )) -> (Json.Encode.list identity [ encodeString "Foo.Bar.LatLng", encodeFloat m0, encodeFloat m1 ])
+        (Foo.Bar.Address (m0, m1, m2 )) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Address", encodeString m0, encodeInt m1, encodeFooBarCountryCode m2 ])
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AA") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AB") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AC") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.ZZ") []], name = TypeName "Foo.Bar.CountryCode" [] } -}
+encodeFooBarCountryCode : Foo.Bar.CountryCode -> Json.Encode.Value
+encodeFooBarCountryCode value =
+    case value of
+        (Foo.Bar.AA) -> (Json.Encode.list identity [ encodeString "Foo.Bar.AA" ])
+        (Foo.Bar.AB) -> (Json.Encode.list identity [ encodeString "Foo.Bar.AB" ])
+        (Foo.Bar.AC) -> (Json.Encode.list identity [ encodeString "Foo.Bar.AC" ])
+        (Foo.Bar.ZZ) -> (Json.Encode.list identity [ encodeString "Foo.Bar.ZZ" ])
+
+
+
 {-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Traditional_phrase") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Bespoke_sentence") []], name = TypeName "Foo.Bar.Custom_word" [] } -}
 encodeFooBarCustom_word : Foo.Bar.Custom_word -> Json.Encode.Value
 encodeFooBarCustom_word value =
@@ -249,12 +269,12 @@ encodeFooBarCustom_word value =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Option") [ConstructorTypeParam "x"],CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
 encodeFooBarHello : (x -> Json.Encode.Value) -> Foo.Bar.Hello x -> Json.Encode.Value
 encodeFooBarHello argx value =
     case value of
         (Foo.Bar.Hello) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Hello" ])
-        (Foo.Bar.Good m0 m1) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Good", (encodeString m0), (encodeResult (argx) (encodeMaybe (encodeString)) m1) ])
+        (Foo.Bar.Good m0 m1) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Good", encodeString m0, encodeResult (encodeFooBarOption ((argx))) (encodeMaybe (encodeString)) m1 ])
 
 
 
@@ -271,7 +291,7 @@ encodeFooBarMsg : Foo.Bar.Msg -> Json.Encode.Value
 encodeFooBarMsg value =
     case value of
         (Foo.Bar.Noop) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Noop" ])
-        (Foo.Bar.Changes m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Changes", (<function>) ])
+        (Foo.Bar.Changes m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.Changes", <function> ])
 -}
 
 
@@ -289,12 +309,12 @@ encodeFooBarOption arga value =
 encodeFooBarPayload : Foo.Bar.Payload -> Json.Encode.Value
 encodeFooBarPayload value =
     Json.Encode.object
-        [ ("title", (encodeString) value.title)
-        , ("author_person", (encodeFooBarPerson) value.author_person)
-        , ("comments", (encodeMaybe (encodeString)) value.comments)
-        , ("blob", (encodeJsonEncodeValue) value.blob)
-        , ("blob2", (encodeJsonDecodeValue) value.blob2)
-        , ("custom_word", (encodeFooBarCustom_word) value.custom_word)
+        [ ("title", encodeString value.title)
+        , ("author_person", encodeFooBarPerson value.author_person)
+        , ("comments", encodeMaybe (encodeString) value.comments)
+        , ("blob", encodeJsonEncodeValue value.blob)
+        , ("blob2", encodeJsonDecodeValue value.blob2)
+        , ("custom_word", encodeFooBarCustom_word value.custom_word)
         ]
 
 
@@ -303,8 +323,8 @@ encodeFooBarPayload value =
 encodeFooBarPerson : Foo.Bar.Person -> Json.Encode.Value
 encodeFooBarPerson value =
     Json.Encode.object
-        [ ("name", (encodeString) value.name)
-        , ("age", (encodeInt) value.age)
+        [ ("name", encodeString value.name)
+        , ("age", encodeInt value.age)
         ]
 
 
@@ -314,7 +334,7 @@ encodeFooBarPerson value =
 encodeFooBarPrivateCustom : Foo.Bar.PrivateCustom -> Json.Encode.Value
 encodeFooBarPrivateCustom value =
     case value of
-        (Foo.Bar.PrivateCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.PrivateCustom", (encodeInt m0) ])
+        (Foo.Bar.PrivateCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.PrivateCustom", encodeInt m0 ])
 -}
 
 
@@ -324,16 +344,16 @@ encodeFooBarPrivateCustom value =
 encodeFooBarProtectedCustom : Foo.Bar.ProtectedCustom -> Json.Encode.Value
 encodeFooBarProtectedCustom value =
     case value of
-        (Foo.Bar.ProtectedCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.ProtectedCustom", (encodeInt m0) ])
+        (Foo.Bar.ProtectedCustom m0) -> (Json.Encode.list identity [ encodeString "Foo.Bar.ProtectedCustom", encodeInt m0 ])
 -}
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Int") []),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Result") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [ConstructorTypeParam "Foo.Bar.a"],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Payload") []]),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
 encodeFooBarWithTypeVariable : (a -> Json.Encode.Value) -> Foo.Bar.WithTypeVariable a -> Json.Encode.Value
 encodeFooBarWithTypeVariable arga value =
     Json.Encode.object
-        [ ("meta", (encodeInt) value.meta)
+        [ ("meta", encodeResult (encodeFooBarHello ((arga))) (encodeFooBarPayload) value.meta)
         , ("data", (arga) value.data)
         ]
 
@@ -348,6 +368,38 @@ decodeFooBarAcknowledgement argx =
 decodeFooBarChoice : Json.Decode.Decoder (Foo.Bar.Choice)
 decodeFooBarChoice  =
     (decodeFooBarOption (decodeBool))
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.LatLng") [Tuple2 (CustomTypeConstructor (TitleCaseDotPhrase "Float") []) (CustomTypeConstructor (TitleCaseDotPhrase "Float") [])],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Address") [Tuple3 (CustomTypeConstructor (TitleCaseDotPhrase "String") []) (CustomTypeConstructor (TitleCaseDotPhrase "Int") []) (CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.CountryCode") [])]], name = TypeName "Foo.Bar.Coordinates" [] } -}
+decodeFooBarCoordinates : Json.Decode.Decoder (Foo.Bar.Coordinates)
+decodeFooBarCoordinates  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.LatLng" -> (Json.Decode.succeed Foo.Bar.LatLng |> (Json.Decode.map2 (|>) (Json.Decode.map2 (\item1 item2 -> (item1, item2))  (Json.Decode.index 1 (decodeFloat))  (Json.Decode.index 2 (decodeFloat)))))
+                    "Foo.Bar.Address" -> (Json.Decode.succeed Foo.Bar.Address |> (Json.Decode.map2 (|>) (Json.Decode.map3 (\item1 item2 item3 -> (item1, item2, item3))   (Json.Decode.index 1 (decodeString))  (Json.Decode.index 2 (decodeInt))  (Json.Decode.index 3 (decodeFooBarCountryCode)))))
+                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.Coordinates: " ++ word)
+            )
+                 
+
+
+
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AA") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AB") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.AC") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.ZZ") []], name = TypeName "Foo.Bar.CountryCode" [] } -}
+decodeFooBarCountryCode : Json.Decode.Decoder (Foo.Bar.CountryCode)
+decodeFooBarCountryCode  =
+    Json.Decode.index 0 Json.Decode.string
+        |> Json.Decode.andThen
+            (\word ->
+                case word of
+                    "Foo.Bar.AA" -> (Json.Decode.succeed Foo.Bar.AA)
+                    "Foo.Bar.AB" -> (Json.Decode.succeed Foo.Bar.AB)
+                    "Foo.Bar.AC" -> (Json.Decode.succeed Foo.Bar.AC)
+                    "Foo.Bar.ZZ" -> (Json.Decode.succeed Foo.Bar.ZZ)
+                    _ -> Json.Decode.fail ("Unexpected Foo.Bar.CountryCode: " ++ word)
+            )
+                 
 
 
 
@@ -366,7 +418,7 @@ decodeFooBarCustom_word  =
 
 
 
-{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [ConstructorTypeParam "x",CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
+{-| CustomTypeDef { constructors = [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Good") [CustomTypeConstructor (TitleCaseDotPhrase "String") [],CustomTypeConstructor (TitleCaseDotPhrase "Result") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Option") [ConstructorTypeParam "x"],CustomTypeConstructor (TitleCaseDotPhrase "Maybe") [CustomTypeConstructor (TitleCaseDotPhrase "String") []]]]], name = TypeName "Foo.Bar.Hello" ["x"] } -}
 decodeFooBarHello : (Json.Decode.Decoder (x)) -> Json.Decode.Decoder (Foo.Bar.Hello x)
 decodeFooBarHello argx =
     Json.Decode.index 0 Json.Decode.string
@@ -374,7 +426,7 @@ decodeFooBarHello argx =
             (\word ->
                 case word of
                     "Foo.Bar.Hello" -> (Json.Decode.succeed Foo.Bar.Hello)
-                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeString))) |> (Json.Decode.map2 (|>) (Json.Decode.index 2 (decodeResult (argx) (decodeMaybe (decodeString))))))
+                    "Foo.Bar.Good" -> (Json.Decode.succeed Foo.Bar.Good |> (Json.Decode.map2 (|>) ( (Json.Decode.index 1 (decodeString)))) |> (Json.Decode.map2 (|>) ( (Json.Decode.index 2 (decodeResult (decodeFooBarOption ((argx))) (decodeMaybe (decodeString)))))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Hello: " ++ word)
             )
                  
@@ -397,7 +449,7 @@ decodeFooBarMsg  =
             (\word ->
                 case word of
                     "Foo.Bar.Noop" -> (Json.Decode.succeed Foo.Bar.Noop)
-                    "Foo.Bar.Changes" -> (Json.Decode.succeed Foo.Bar.Changes |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (<function>))))
+                    "Foo.Bar.Changes" -> (Json.Decode.succeed Foo.Bar.Changes |> (Json.Decode.map2 (|>) (<function>)))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Msg: " ++ word)
             )
                  
@@ -413,7 +465,7 @@ decodeFooBarOption arga =
             (\word ->
                 case word of
                     "Foo.Bar.None" -> (Json.Decode.succeed Foo.Bar.None)
-                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (arga))))
+                    "Foo.Bar.Some" -> (Json.Decode.succeed Foo.Bar.Some |> (Json.Decode.map2 (|>) ((Json.Decode.index 1 (arga)))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.Option: " ++ word)
             )
                  
@@ -450,7 +502,7 @@ decodeFooBarPrivateCustom  =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Foo.Bar.PrivateCustom" -> (Json.Decode.succeed Foo.Bar.PrivateCustom |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    "Foo.Bar.PrivateCustom" -> (Json.Decode.succeed Foo.Bar.PrivateCustom |> (Json.Decode.map2 (|>) ( (Json.Decode.index 1 (decodeInt)))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.PrivateCustom: " ++ word)
             )
                  
@@ -466,7 +518,7 @@ decodeFooBarProtectedCustom  =
         |> Json.Decode.andThen
             (\word ->
                 case word of
-                    "Foo.Bar.ProtectedCustom" -> (Json.Decode.succeed Foo.Bar.ProtectedCustom |> (Json.Decode.map2 (|>) (Json.Decode.index 1 (decodeInt))))
+                    "Foo.Bar.ProtectedCustom" -> (Json.Decode.succeed Foo.Bar.ProtectedCustom |> (Json.Decode.map2 (|>) ( (Json.Decode.index 1 (decodeInt)))))
                     _ -> Json.Decode.fail ("Unexpected Foo.Bar.ProtectedCustom: " ++ word)
             )
                  
@@ -474,9 +526,9 @@ decodeFooBarProtectedCustom  =
 
 
 
-{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Int") []),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
+{-| TypeAliasDef (AliasRecordType (TypeName "Foo.Bar.WithTypeVariable" ["a"]) [CustomField (FieldName "meta") (CustomTypeConstructor (TitleCaseDotPhrase "Result") [CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Hello") [ConstructorTypeParam "Foo.Bar.a"],CustomTypeConstructor (TitleCaseDotPhrase "Foo.Bar.Payload") []]),CustomField (FieldName "data") (ConstructorTypeParam "Foo.Bar.a")]) -}
 decodeFooBarWithTypeVariable : (Json.Decode.Decoder (a)) -> Json.Decode.Decoder (Foo.Bar.WithTypeVariable a)
 decodeFooBarWithTypeVariable arga =
     Json.Decode.succeed Foo.Bar.WithTypeVariable
-        |> Json.Decode.map2 (|>) (Json.Decode.at [ "meta" ] (decodeInt))
-        |> Json.Decode.map2 (|>) (Json.Decode.at [ "data" ] (arga))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "meta" ] (decodeResult (decodeFooBarHello ((arga))) (decodeFooBarPayload)))
+        |> Json.Decode.map2 (|>) (Json.Decode.at [ "data" ] ((arga)))
